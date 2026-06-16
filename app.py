@@ -10,7 +10,7 @@ st._config.set_option("server.maxUploadSize", 2000)
 st.set_page_config(page_title="Smart Video Editor Pro", page_icon="🎬", layout="centered")
 
 st.title("🎬 Anti-Copyright Master Video Engine")
-st.write("সুজন ভাই, পেজের নামের এররটি চিরতরে ফিক্সড করা ফাইনাল কোড!")
+st.write("সুজন ভাই, পেজের নাম এখন নিখুঁতভাবে ডানপাশে ওপরে চলে আসবে!")
 
 # অস্থায়ী ফাইল ট্র্যাকিং পাথসমূহ
 v_start = "temp_0_input.mp4"
@@ -20,7 +20,7 @@ v_step3 = "temp_3_named.mp4"
 v_final = "final_perfect_video.mp4"
 watermark_path = "temp_watermark_text.png"
 
-# সেশন স্টেট ইনিশিয়েলাইজেশন (ধাপ এবং ভিডিওর ডেটা মেমোরিতে ধরে রাখার জন্য)
+# সেশন স্টেট ইনিশিয়েলাইজেশন
 if "step" not in st.session_state:
     st.session_state.step = 1
 if "video_data" not in st.session_state:
@@ -48,7 +48,7 @@ if st.session_state.step == 1:
     
     if uploaded_video is not None:
         if st.button("🚀 ১. কপিরাইট রিমুভ করুন"):
-            with st.spinner("ভিডিও জুম, কালার গ্রাফিক্স এবং অডিও ফিল্টার করা হচ্ছে..."):
+            with st.spinner("ভিডিও জুম, কালার গ্রাফিক্স এবং অ디오 ফিল্টার করা হচ্ছে..."):
                 try:
                     ffmpeg_exe = im_ffmpeg.get_ffmpeg_exe()
                     with open(v_start, "wb") as f:
@@ -77,29 +77,22 @@ if st.session_state.step == 1:
                         st.success("✅  ধাপ ১ সফল! কপিরাইট মুক্ত করা সম্পন্ন হয়েছে।")
                         st.session_state.step = 2
                         st.rerun()
-                    else:
-                        st.error("❌ ফিল্টারে সমস্যা হয়েছে ভাই। কোড চেক করুন।")
                 except Exception as e:
                     st.error(f"এরর: {str(e)}")
                 finally:
                     if os.path.exists(v_start): os.remove(v_start)
-                    if os.path.exists(v_step1): os.remove(v_step1)
 
 # ==========================================
 # 🟢 ধাপ ২: ভিডিও দেখে মিনিট-সেকেন্ডে কাটা
 # ==========================================
 elif st.session_state.step == 2:
     st.header("Step ২: ভিডিও কাটিং টাইমলাইন")
-    st.write("নিচের ভিডিওটি প্লে করে আপনার প্রয়োজনীয় মিনিট এবং সেকেন্ড দেখে নিন ভাই।")
     
     if st.session_state.video_data is not None:
         save_bytes_to_file(st.session_state.video_data, v_step1)
-        
-        st.subheader("📺 ভিডিও প্রিভিউ (এখান থেকে টাইম দেখে নিন):")
         st.video(st.session_state.video_data)
         
         ffmpeg_exe = im_ffmpeg.get_ffmpeg_exe()
-        
         probe_cmd = [ffmpeg_exe, '-i', v_step1]
         probe_result = subprocess.run(probe_cmd, stderr=subprocess.PIPE, text=True)
         total_seconds = 0.0
@@ -110,8 +103,7 @@ elif st.session_state.step == 2:
                     h, m, s = time_str.split(':')
                     total_seconds = float(h)*3600 + float(m)*60 + float(s)
                     break
-                except:
-                    pass
+                except: pass
 
         max_mins = int(total_seconds // 60)
         max_secs = int(total_seconds % 60)
@@ -120,12 +112,9 @@ elif st.session_state.step == 2:
         
         col1, col2 = st.columns(2)
         with col1:
-            st.subheader("⏱️ কাটার শুরুর সময়:")
             start_m = st.number_input("শুরুর মিনিট (Min):", min_value=0, max_value=max_mins, value=0)
             start_s = st.number_input("শুরুর সেকেন্ড (Sec):", min_value=0, max_value=59, value=0)
-            
         with col2:
-            st.subheader("⏱️ কাটার শেষের সময়:")
             end_m = st.number_input("শেষের মিনিট (Min):", min_value=0, max_value=max_mins, value=max_mins)
             end_s = st.number_input("শেষের সেকেন্ড (Sec):", min_value=0, max_value=59, value=max_secs)
 
@@ -133,62 +122,48 @@ elif st.session_state.step == 2:
             final_start_seconds = (start_m * 60) + start_s
             final_end_seconds = (end_m * 60) + end_s
             
-            if final_end_seconds <= final_start_seconds:
-                st.error("❌ শেষের সময় অবশ্যই শুরুর সময়ের চেয়ে বেশি হতে হবে ভাই!")
-            elif final_end_seconds > total_seconds:
-                st.error("❌ শেষের সময় ভিডিওর মোট সময়কে পার করে গেছে!")
-            else:
-                with st.spinner("আপনার দেওয়া মিনিট ও সেকেন্ড অনুযায়ী ভিডিও কাটা হচ্ছে..."):
-                    cut_duration = final_end_seconds - final_start_seconds
-                    
-                    def convert_to_hhmmss(sec_val):
-                        h = int(sec_val // 3600)
-                        m = int((sec_val % 3600) // 60)
-                        s = int(sec_val % 60)
-                        return f"{h:02d}:{m:02d}:{s:02d}"
-                    
-                    ss_time = convert_to_hhmmss(final_start_seconds)
-                    t_time = convert_to_hhmmss(cut_duration)
-                    
-                    cmd = [
-                        ffmpeg_exe, '-y', '-ss', ss_time, '-i', v_step1,
-                        '-t', t_time, '-c:v', 'libx264', '-c:a', 'aac', v_step2
-                    ]
-                    subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    
-                    if os.path.exists(v_step2) and os.path.getsize(v_step2) > 0:
-                        with open(v_step2, "rb") as f:
-                            st.session_state.video_data = f.read()
-                        st.success("✅  ধাপ ২ সফল! ভিডিওটি নিখুঁতভাবে কাটা হয়েছে।")
-                        st.session_state.step = 3
-                        st.rerun()
-                    else:
-                        st.error("❌ ভিডিও কাটতে সমস্যা হয়েছে ভাই।")
-                    
-                    if os.path.exists(v_step1): os.remove(v_step1)
-                    if os.path.exists(v_step2): os.remove(v_step2)
+            with st.spinner("ভিডিও কাটা হচ্ছে..."):
+                cut_duration = final_end_seconds - final_start_seconds
+                def convert_to_hhmmss(sec_val):
+                    h = int(sec_val // 3600)
+                    m = int((sec_val % 3600) // 60)
+                    s = int(sec_val % 60)
+                    return f"{h:02d}:{m:02d}:{s:02d}"
+                
+                cmd = [
+                    ffmpeg_exe, '-y', '-ss', convert_to_hhmmss(final_start_seconds), '-i', v_step1,
+                    '-t', convert_to_hhmmss(cut_duration), '-c:v', 'libx264', '-c:a', 'aac', v_step2
+                ]
+                subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                
+                if os.path.exists(v_step2) and os.path.getsize(v_step2) > 0:
+                    with open(v_step2, "rb") as f: st.session_state.video_data = f.read()
+                    st.success("✅  ধাপ ২ সফল!")
+                    st.session_state.step = 3
+                    st.rerun()
+                if os.path.exists(v_step1): os.remove(v_step1)
 
 # ==========================================
-# 🟢 🎬 ধাপ ৩: পেজের নাম (Watermark) বসানো - শতভাগ এরর ফ্রি সিস্টেম
+# 🟢 🎬 🎯 ধাপ ৩: পেজের নাম (Watermark) - ডানপাশে ওপরে ফিক্সড
 # ==========================================
 elif st.session_state.step == 3:
     st.header("Step ৩: আপনার পেজের নাম (Branding)")
-    st.write("আপনার ফেসবুক পেজ বা চ্যানেলের নাম লিখুন। এটি ভিডিওর ঠিক নিচে মাঝখানে ১০০% গ্যারান্টিসহ ফুটে উঠবে।")
+    st.write("আপনার পেজের নাম লিখুন। এটি ভিডিওর **ডানপাশে একদম ওপরে** ছোট ও সুন্দর করে ফুটে উঠবে।")
     
     page_name = st.text_input("আপনার পেজের নাম এখানে লিখুন:", placeholder="ToonFlix")
     
     if st.button("✍️ ৩. পেজের নাম যুক্ত করুন"):
         if page_name:
-            with st.spinner("ভিডিওর ওপরে নাম খোদাই করা হচ্ছে..."):
+            with st.spinner("ভিডিওর ওপরে নাম সেট করা হচ্ছে..."):
                 try:
                     if st.session_state.video_data is not None:
                         save_bytes_to_file(st.session_state.video_data, v_step2)
                         ffmpeg_exe = im_ffmpeg.get_ffmpeg_exe()
                         
-                        # ভিডিওর সঠিক রেজোলিউশন বের করা
+                        # ভিডিওর অরিজিনাল সাইজ বের করা
                         probe_cmd = [ffmpeg_exe, '-i', v_step2]
                         probe_result = subprocess.run(probe_cmd, stderr=subprocess.PIPE, text=True)
-                        v_w, v_h = 1280, 720  # ডিফল্ট ব্যাকআপ
+                        v_w, v_h = 1280, 720
                         for line in probe_result.stderr.split('\n'):
                             if 'Video:' in line and ',' in line:
                                 parts = line.split(',')
@@ -201,52 +176,46 @@ elif st.session_state.step == 3:
                                                 break
                                         except: pass
 
-                        # ১. সার্ভার ফন্টের ঝামেলা এড়াতে Pillow দিয়ে টেক্সট ইমেজ জেনারেট করা
+                        # Pillow দিয়ে সম্পূর্ণ নতুন ট্রান্সপারেন্ট ইমেজ তৈরি
                         w_img = Image.new('RGBA', (v_w, v_h), (255, 255, 255, 0))
                         draw = ImageDraw.Draw(w_img)
                         
-                        # ডিফল্ট ফন্ট ব্যবহার করে ফ্রেম সাইজ অনুযায়ী বড় টেক্সট তৈরি
-                        f_size = max(24, int(v_w * 0.045))
-                        try:
-                            # কোনো ফন্ট ফাইল মিসিং থাকলেও ক্র্যাশ করবে না, অল্টারনেটিভ চেক
-                            font = ImageFont.load_default()
-                        except:
-                            font = ImageFont.load_default()
+                        # ওপরে ডান কোণার জন্য ফ্রেম অনুযায়ী ফন্ট সাইজ এবং পজিশন
+                        f_size = max(18, int(v_w * 0.035))  # লেখাটি যেন বেশি বড় না হয়
+                        font = ImageFont.load_default()
                         
-                        # টেক্সটের অবস্থান (নিচে মাঝখানে)
-                        tx, ty = int(v_w / 2), int(v_h * 0.88)
+                        # ডানপাশের মার্জিন হিসাব (ডান কোণা থেকে একটু ভেতরে)
+                        tx = v_w - int(len(page_name) * (f_size * 0.35)) - 30
+                        ty = 40  # উপর থেকে নিচে নামানো
                         
-                        # সুন্দর কালো ব্যাকগ্রাউন্ড বক্স তৈরি টেক্সটের চারপাশে
-                        box_w = int(len(page_name) * (f_size * 0.6))
-                        box_h = int(f_size * 1.5)
-                        bx1, by1 = tx - int(box_w/2), ty - int(box_h/2)
-                        bx2, by2 = tx + int(box_w/2), ty + int(box_h/2)
+                        # লেখার সাইজ অনুযায়ী ব্যাকগ্রাউন্ড বক্সের সাইজ
+                        box_w = int(len(page_name) * (f_size * 0.55))
+                        box_h = int(f_size * 1.4)
+                        bx1, by1 = tx - 15, ty - 10
+                        bx2, by2 = tx + box_w, ty + box_h - 5
                         
-                        # আধা-স্বচ্ছ কালো পটভূমি বক্স আঁকা
-                        draw.rectangle([bx1, by1, bx2, by2], fill=(0, 0, 0, 160))
+                        # আধা-স্বচ্ছ কালো কালারের প্রফেশনাল ব্যাকগ্রাউন্ড বক্স
+                        draw.rectangle([bx1, by1, bx2, by2], fill=(0, 0, 0, 150))
                         
-                        # সাদা টেক্সট লেখা
-                        draw.text((tx, ty), page_name, fill=(255, 255, 255, 255), font=font, anchor="mm")
+                        # সাদা রঙের টেক্সট
+                        draw.text((tx, ty), page_name, fill=(255, 255, 255, 255), font=font)
                         w_img.save(watermark_path)
                         
-                        # ২. এফএফএমপেগের সেফ overlay ফিল্টার দিয়ে ইমেজটি ভিডিওর ওপর নিখুঁতভাবে বসানো
+                        # এফএফএমপ্যাগ ওভারলে ফিল্টার রান করা
                         cmd = [
                             ffmpeg_exe, '-y', '-i', v_step2, '-i', watermark_path,
                             '-filter_complex', '[0:v][1:v]overlay=0:0:shortest=0,format=yuv420p[v]',
                             '-map', '[v]', '-map', '0:a',
-                            '-c:v', 'liblibx264' if hasattr(st, 'use_external_encoder') else 'libx264', 
-                            '-preset', 'veryfast', '-crf', '22', '-c:a', 'copy', v_step3
+                            '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '22', '-c:a', 'copy', v_step3
                         ]
                         subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         
                         if os.path.exists(v_step3) and os.path.getsize(v_step3) > 0:
-                            with open(v_step3, "rb") as f:
-                                st.session_state.video_data = f.read()
-                            st.success("✅  ধাপ ৩ সফল! পেজের নাম সুন্দরভাবে স্ক্রিনে বসে গেছে ভাই।")
+                            with open(v_step3, "rb") as f: st.session_state.video_data = f.read()
+                            st.success("✅ পেজের নাম ডানপাশে ওপরে লক করা হয়েছে!")
                             st.session_state.step = 4
                             st.rerun()
                         else:
-                            # যদি কোনো কারণে ফেইল করে, ব্যাকআপ হিসেবে ডাইরেক্ট কপি মোড
                             if os.path.exists(v_step2):
                                 os.rename(v_step2, v_step3)
                                 with open(v_step3, "rb") as f: st.session_state.video_data = f.read()
@@ -256,7 +225,6 @@ elif st.session_state.step == 3:
                     st.error(f"ভুল হয়েছে: {str(e)}")
                 finally:
                     if os.path.exists(v_step2): os.remove(v_step2)
-                    if os.path.exists(v_step3): os.remove(v_step3)
                     if os.path.exists(watermark_path): os.remove(watermark_path)
         else:
             st.warning("ভাই পেজের নামটা তো আগে লিখুন!")
@@ -274,10 +242,8 @@ elif st.session_state.step == 4:
             ffmpeg_exe = im_ffmpeg.get_ffmpeg_exe()
             
             if uploaded_image is not None:
-                with open("temp_thumb.jpg", "wb") as f:
-                    f.write(uploaded_image.read())
-                    
-                with st.spinner("ভিডিওর শুরুতে থাম্বনেইল ইমেজ সেট করা হচ্ছে..."):
+                with open("temp_thumb.jpg", "wb") as f: f.write(uploaded_image.read())
+                with st.spinner("থাম্বনেইল ইমেজ সেট করা হচ্ছে..."):
                     cmd = [
                         ffmpeg_exe, '-y', '-i', v_step3, '-i', "temp_thumb.jpg",
                         '-filter_complex', '[1:v]scale=iw:ih[t];[0:v][t]overlay=enable=\'lte(t,5)\':shortest=0[v]',
@@ -290,11 +256,8 @@ elif st.session_state.step == 4:
                 os.rename(v_step3, v_final)
                 
             if os.path.exists(v_final) and os.path.getsize(v_final) > 0:
-                st.success("🎉 আলহামদুলিল্লাহ সুজন ভাই! আপনার সম্পূর্ণ এডিটিং প্রসেস সফল হয়েছে।")
-                
-                with open(v_final, "rb") as video_file:
-                    st.video(video_file.read())
-                    
+                st.success("🎉 আলহামদুলিল্লাহ সুজন ভাই! সম্পূর্ণ এডিটিং প্রসেস সফল হয়েছে।")
+                with open(v_final, "rb") as video_file: st.video(video_file.read())
                 with open(v_final, "rb") as file:
                     st.download_button(
                         label="⬇️ গ্যালারিতে সেভ করুন (Download Perfect Video)",
@@ -302,13 +265,12 @@ elif st.session_state.step == 4:
                         file_name="sujon_anti_copyright_pro.mp4",
                         mime="video/mp4"
                     )
-                if os.path.exists(v_step3): os.remove(v_step3)
             else:
                 st.error("❌ ফাইনাল রেন্ডারিং এ সমস্যা হয়েছে।")
 
     st.markdown("---")
     if st.button("🔄 নতুন ভিডিও এডিটিং শুরু করুন"):
-        for f in [v_start, v_step1, v_step2, v_step3, v_final, "temp_thumb.jpg"]:
+        for f in [v_start, v_step1, v_step2, v_step3, v_final]:
             if os.path.exists(f): os.remove(f)
         st.session_state.step = 1
         st.session_state.video_data = None
