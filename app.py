@@ -10,7 +10,7 @@ st._config.set_option("server.maxUploadSize", 2000)
 st.set_page_config(page_title="Smart Video Editor Pro", page_icon="🎬", layout="centered")
 
 st.title("🎬 Anti-Copyright Master Video Engine")
-st.write("সুজন ভাই, এখন নিজের চোখে দেখে পেজের নামের সাইজ ও পজিশন নিখুঁতভাবে অ্যাডজাস্ট করুন!")
+st.write("সুজন ভাই, এখন স্লাইডার নাড়ালেই চোখের সামনে লাইভ দেখতে পাবেন লেখা কোথায় যাচ্ছে!")
 
 # অস্থায়ী ফাইল ট্র্যাকিং পাথসমূহ
 v_start = "temp_0_input.mp4"
@@ -19,6 +19,7 @@ v_step2 = "temp_2_cropped.mp4"
 v_step3 = "temp_3_named.mp4"
 v_final = "final_perfect_video.mp4"
 watermark_path = "temp_watermark_text.png"
+preview_img_path = "temp_preview_frame.jpg"
 
 # সেশন স্টেট ইনিশিয়েলাইজেশন
 if "step" not in st.session_state:
@@ -34,7 +35,7 @@ def save_bytes_to_file(bytes_data, file_path):
         f.write(bytes_data)
 
 # ==========================================
-# 🟢 ধাপ ১: ভিডিও আপলোড ও কপিরাইট রিমুভ
+# 🟢  ধাপ ১: ভিডিও আপলোড ও কপিরাইট রিমুভ
 # ==========================================
 if st.session_state.step == 1:
     st.header("Step ১: ভিডিও আপলোড ও কপিরাইট ফিল্টার")
@@ -83,7 +84,7 @@ if st.session_state.step == 1:
                     if os.path.exists(v_start): os.remove(v_start)
 
 # ==========================================
-# 🟢 ধাপ ২: ভিডিও দেখে মিনিট-সেকেন্ডে কাটা
+# 🟢  ধাপ ২: ভিডিও দেখে মিনিট-সেকেন্ডে কাটা
 # ==========================================
 elif st.session_state.step == 2:
     st.header("Step ২: ভিডিও কাটিং টাইমলাইন")
@@ -144,97 +145,100 @@ elif st.session_state.step == 2:
                 if os.path.exists(v_step1): os.remove(v_step1)
 
 # ==========================================
-# 🟢 🎬 🎯 ধাপ ৩: কাস্টম সাইজ ও পজিশন অ্যাডজাস্টমেন্ট কন্ট্রোল প্যানেল
+# 🟢 🎬 🎯 📸 ধাপ ৩: লাইভ প্রিভিউ সহ টেক্সট পজিশন কন্ট্রোল
 # ==========================================
 elif st.session_state.step == 3:
-    st.header("Step ৩: পেজের নাম সাজানো ও নিখুঁত অ্যাডজাস্টমেন্ট")
-    st.write("লেখাটি ডানপাশেই থাকবে। নিচের স্লাইডারগুলো ব্যবহার করে সাইজ এবং পজিশন সুন্দর মতো ম্যাচ করিয়ে নিন।")
+    st.header("Step ৩: লাইভ প্রিভিউ দেখে সাইজ ও পজিশন মেলান")
+    st.write("নিচের স্লাইডারগুলো নাড়ালে ছবিতে লাইভ দেখতে পাবেন নাম কোথায় বসছে।")
     
-    page_name = st.text_input("আপনার পেজের নাম এখানে লিখুন:", value="ToonFlix")
-    
-    # প্রফেশনাল স্লাইডার কন্ট্রোলসমূহ
-    st.markdown("### 🎛️ টেক্সট কন্ট্রোল প্যানেল:")
-    font_size = st.slider("📐 লেখার সাইজ বড়/ছোট করুন (Font Size):", min_value=20, max_value=120, value=50, step=5)
-    padding_right = st.slider("⬅️ ডান কোণা থেকে কতটা ভেতরে আনবেন (Right Margin):", min_value=10, max_value=300, value=50, step=5)
-    padding_top = st.slider("⬇️ উপর থেকে কতটা নিচে নামাবেন (Top Margin):", min_value=10, max_value=300, value=40, step=5)
-    
-    if st.button("✍️ ৩. এই মাপে পেজের নাম লক করুন"):
-        if page_name:
-            with st.spinner("আপনার দেওয়া মাপে নাম সেট করা হচ্ছে..."):
-                try:
-                    if st.session_state.video_data is not None:
-                        save_bytes_to_file(st.session_state.video_data, v_step2)
-                        ffmpeg_exe = im_ffmpeg.get_ffmpeg_exe()
-                        
-                        # ভিডিওর অরিজিনাল সাইজ বের করা
-                        probe_cmd = [ffmpeg_exe, '-i', v_step2]
-                        probe_result = subprocess.run(probe_cmd, stderr=subprocess.PIPE, text=True)
-                        v_w, v_h = 1280, 720
-                        for line in probe_result.stderr.split('\n'):
-                            if 'Video:' in line and ',' in line:
-                                parts = line.split(',')
-                                for part in parts:
-                                    if 'x' in part:
-                                        try:
-                                            dims = part.strip().split(' ')[0].split('x')
-                                            if len(dims) >= 2 and dims[0].isdigit():
-                                                v_w, v_h = int(dims[0]), int(dims[1])
-                                                break
-                                        except: pass
+    if st.session_state.video_data is not None:
+        save_bytes_to_file(st.session_state.video_data, v_step2)
+        ffmpeg_exe = im_ffmpeg.get_ffmpeg_exe()
+        
+        # ভিডিওর প্রথম ফ্রেম থেকে একটি ইমেজ প্রিভিউ তৈরি (যদি না থেকে থাকে)
+        if not os.path.exists(preview_img_path):
+            extract_cmd = [ffmpeg_exe, '-y', '-i', v_step2, '-ss', '00:00:01', '-vframes', '1', preview_img_path]
+            subprocess.run(extract_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            
+        # ভিডিওর আসল সাইজ বের করা
+        v_w, v_h = 1280, 720
+        probe_cmd = [ffmpeg_exe, '-i', v_step2]
+        probe_result = subprocess.run(probe_cmd, stderr=subprocess.PIPE, text=True)
+        for line in probe_result.stderr.split('\n'):
+            if 'Video:' in line and ',' in line:
+                parts = line.split(',')
+                for part in parts:
+                    if 'x' in part:
+                        try:
+                            dims = part.strip().split(' ')[0].split('x')
+                            if len(dims) >= 2 and dims[0].isdigit():
+                                v_w, v_h = int(dims[0]), int(dims[1])
+                                break
+                        except: pass
 
-                        # Pillow ট্রান্সপারেন্ট ক্যানভাস তৈরি
-                        w_img = Image.new('RGBA', (v_w, v_h), (255, 255, 255, 0))
-                        draw = ImageDraw.Draw(w_img)
-                        font = ImageFont.load_default()
+        page_name = st.text_input("আপনার পেজের নাম এখানে লিখুন:", value="ToonFlix")
+        
+        # স্লাইডার কন্ট্রোল প্যানেল
+        st.markdown("### 🎛️ এডজাস্টমেন্ট টুলস:")
+        font_size = st.slider("📐 লেখার সাইজ (Font Size):", min_value=15, max_value=120, value=45, step=2)
+        pos_x = st.slider("⬅️ ডানে-বামে সরান (X Position):", min_value=0, max_value=v_w, value=int(v_w * 0.75))
+        pos_y = st.slider("⬇️ ওপরে-নিচে সরান (Y Position):", min_value=0, max_value=v_h, value=40)
+        
+        # 📸 লাইভ প্রিভিউ জেনারেশন (১ সেকেন্ডের মধ্যে কাজ করবে)
+        if os.path.exists(preview_img_path) and page_name:
+            base_image = Image.open(preview_img_path).convert("RGBA")
+            # ভিডিও রেশিও মেইনটেইন করার জন্য ক্যানভাস রিসাইজ
+            base_image = base_image.resize((v_w, v_h))
+            
+            draw = ImageDraw.Draw(base_image)
+            font = ImageFont.load_default()
+            
+            text_w = int(len(page_name) * (font_size * 0.60))
+            text_h = int(font_size * 1.3)
+            
+            bx1, by1 = pos_x - 15, pos_y - 8
+            bx2, by2 = pos_x + text_w + 15, pos_y + text_h + 4
+            
+            # ছবিতে কালো রাউন্ড বক্স ও লেখা আঁকা
+            draw.rounded_rectangle([bx1, by1, bx2, by2], radius=10, fill=(0, 0, 0, 190))
+            for offset in [(0,0), (1,0), (2,0), (0,1), (1,1), (2,1), (0,2), (1,2)]:
+                draw.text((pos_x + offset[0], pos_y + offset[1]), page_name, fill=(255, 255, 255, 255), font=font)
+            
+            st.markdown("#### 📺 লাইভ স্ক্রিন প্রিভিউ:")
+            st.image(base_image, use_container_width=True)
+            
+        if st.button("🎬 ৪. এই পজিশন চূড়ান্ত করে ভিডিও তৈরি করুন"):
+            with st.spinner("পুরো ভিডিওতে নাম নিখুঁতভাবে বসানো হচ্ছে..."):
+                try:
+                    # এফএফএমপ্যাগ এর জন্য একই মাপে ট্রান্সপারেন্ট ওয়াটারমার্ক পিএনজি তৈরি
+                    w_img = Image.new('RGBA', (v_w, v_h), (255, 255, 255, 0))
+                    w_draw = ImageDraw.Draw(w_img)
+                    
+                    w_draw.rounded_rectangle([bx1, by1, bx2, by2], radius=10, fill=(0, 0, 0, 190))
+                    for offset in [(0,0), (1,0), (2,0), (0,1), (1,1), (2,1), (0,2), (1,2)]:
+                        w_draw.text((pos_x + offset[0], pos_y + offset[1]), page_name, fill=(255, 255, 255, 255), font=font)
                         
-                        # স্লাইডারের ফন্ট সাইজ অনুযায়ী নিখুঁত টেক্সট এরিয়া গণনা
-                        text_w = int(len(page_name) * (font_size * 0.60))
-                        text_h = int(font_size * 1.3)
-                        
-                        # ডান পাশে লক রেখে স্লাইডারের মান অনুযায়ী ডাইনামিক পজিশন
-                        tx = v_w - text_w - padding_right
-                        ty = padding_top
-                        
-                        # কালো ব্যাকগ্রাউন্ড বক্সটিকে লেখার মাপে একদম টাইট রাখা হলো
-                        bx1, by1 = tx - 15, ty - 8
-                        bx2, by2 = tx + text_w + 15, ty + text_h + 4
-                        
-                        # রাউন্ডেড স্টাইলিশ কালো ব্যাকগ্রাউন্ড বক্স
-                        draw.rounded_rectangle([bx1, by1, bx2, by2], radius=10, fill=(0, 0, 0, 190))
-                        
-                        # ফন্ট বোল্ড করার জন্য নিখুঁত মাল্টি-লেয়ার ওভারল্যাপ প্রিন্ট
-                        for offset in [(0,0), (1,0), (2,0), (0,1), (1,1), (2,1), (0,2), (1,2)]:
-                            draw.text((tx + offset[0], ty + offset[1]), page_name, fill=(255, 255, 255, 255), font=font)
-                            
-                        w_img.save(watermark_path)
-                        
-                        # এফএফএমপ্যাগ ওভারলে রান
-                        cmd = [
-                            ffmpeg_exe, '-y', '-i', v_step2, '-i', watermark_path,
-                            '-filter_complex', '[0:v][1:v]overlay=0:0:shortest=0,format=yuv420p[v]',
-                            '-map', '[v]', '-map', '0:a',
-                            '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '22', '-c:a', 'copy', v_step3
-                        ]
-                        subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                        
-                        if os.path.exists(v_step3) and os.path.getsize(v_step3) > 0:
-                            with open(v_step3, "rb") as f: st.session_state.video_data = f.read()
-                            st.success("✅ আপনার দেওয়া সাইজ ও পজিশনে পেজের নাম সেট হয়েছে!")
-                            st.session_state.step = 4
-                            st.rerun()
-                        else:
-                            if os.path.exists(v_step2):
-                                os.rename(v_step2, v_step3)
-                                with open(v_step3, "rb") as f: st.session_state.video_data = f.read()
-                                st.session_state.step = 4
-                                st.rerun()
+                    w_img.save(watermark_path)
+                    
+                    cmd = [
+                        ffmpeg_exe, '-y', '-i', v_step2, '-i', watermark_path,
+                        '-filter_complex', '[0:v][1:v]overlay=0:0:shortest=0,format=yuv420p[v]',
+                        '-map', '[v]', '-map', '0:a',
+                        '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '22', '-c:a', 'copy', v_step3
+                    ]
+                    subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    
+                    if os.path.exists(v_step3) and os.path.getsize(v_step3) > 0:
+                        with open(v_step3, "rb") as f: st.session_state.video_data = f.read()
+                        st.success("✅ নাম সফলভাবে ভিডিওতে বসে গেছে!")
+                        st.session_state.step = 4
+                        st.rerun()
                 except Exception as e:
                     st.error(f"ভুল হয়েছে: {str(e)}")
                 finally:
                     if os.path.exists(v_step2): os.remove(v_step2)
                     if os.path.exists(watermark_path): os.remove(watermark_path)
-        else:
-            st.warning("ভাই পেজের নামটা তো আগে লিখুন!")
+                    if os.path.exists(preview_img_path): os.remove(preview_img_path)
 
 # ==========================================
 # 🟢   ধাপ ৪: থাম্বনেইল সেট এবং ফাইনাল ডাউনলোড
@@ -243,7 +247,7 @@ elif st.session_state.step == 4:
     st.header("Step ৪: কাস্টম থাম্বনেইল ও ফাইনাল ডাউনলোড")
     uploaded_image = st.file_uploader("📷 থাম্বনেইল ছবি আপলোড করুন (না দিলেও সমস্যা নেই):", type=["jpg", "jpeg", "png"])
     
-    if st.button("🎬 ৪. ফাইনাল ভিডিও তৈরি ও সেভ করুন"):
+    if st.button("🎬 ফাইনাল ভিডিও রেন্ডার করুন"):
         if st.session_state.video_data is not None:
             save_bytes_to_file(st.session_state.video_data, v_step3)
             ffmpeg_exe = im_ffmpeg.get_ffmpeg_exe()
@@ -263,7 +267,7 @@ elif st.session_state.step == 4:
                 os.rename(v_step3, v_final)
                 
             if os.path.exists(v_final) and os.path.getsize(v_final) > 0:
-                st.success("🎉 আলহামদুলিল্লাহ সুজন ভাই! সম্পূর্ণ এডিটিং প্রসেস সফল হয়েছে।")
+                st.success("🎉 আলহামদুলিল্লাহ সুজন ভাই! আপনার এডিটিং প্রসেস সফল হয়েছে।")
                 with open(v_final, "rb") as video_file: st.video(video_file.read())
                 with open(v_final, "rb") as file:
                     st.download_button(
@@ -277,7 +281,7 @@ elif st.session_state.step == 4:
 
     st.markdown("---")
     if st.button("🔄 নতুন ভিডিও এডিটিং শুরু করুন"):
-        for f in [v_start, v_step1, v_step2, v_step3, v_final]:
+        for f in [v_start, v_step1, v_step2, v_step3, v_final, preview_img_path]:
             if os.path.exists(f): os.remove(f)
         st.session_state.step = 1
         st.session_state.video_data = None
