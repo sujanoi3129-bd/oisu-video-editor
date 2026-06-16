@@ -4,27 +4,36 @@ import os
 import imageio_ffmpeg as im_ffmpeg
 import struct
 
-# বড় ফাইল আপলোডের জন্য সাইজ লিমিট ২০০০ MB বা ২ GB করা হলো
+# বড় ফাইল আপলোডের জন্য সাইজ লিমিট ২০০০ MB বা ২ GB করা হলো (নেট ও ফাইল সেভিং এর জন্য শুরুতে থাকা আবশ্যক)
 st._config.set_option("server.maxUploadSize", 2000)
 
 st.set_page_config(page_title="Video Copyright Remover", page_icon="🎬", layout="centered")
 
 st.title("🎬 Smart Video Copyright Remover")
-st.write("ভিডিও আপলোড করুন, কাটিং পয়েন্ট সিলেক্ট করুন এবং প্রয়োজনে কাস্টম থাম্বনেইল যুক্ত করুন।")
+st.write("থাম্বনেইল সহ অডিও-ভিডিও ১০০% মিল থাকবে এবং মিনিমাইজ করলেও ফাইল কাটবে না।")
 
-# ১. ভিডিও আপলোডার
+# সেশন স্টেট ইনিশিয়াল করা (যাতে পেজ রিলোড বা মিনিমাইজ হলেও ডেটা হারিয়ে না যায়)
+if 'video_processed' not in st.session_state:
+    st.session_state.video_processed = False
+
+# ভিডিও আপলোড ক্যাশিং ফাংশন (বারবার আপলোড হওয়া ঠেকিয়ে ইন্টারনেট বাঁচাবে)
+@st.cache_data(show_spinner=False)
+def save_uploaded_video(file_bytes):
+    input_path = "temp_input.mp4"
+    with open(input_path, "wb") as f:
+        f.write(file_bytes)
+    return input_path
+
 uploaded_file = st.file_uploader("১. গ্যালারি থেকে মূল ভিডিও সিলেক্ট করুন (সর্বোচ্চ ২ GB)", type=["mp4"])
 
-# এমপি৪ ফাইলের দৈর্ঘ্য (Duration) এবং রেজোলিউশন (Width, Height) বের করার লজিক
-def get_mp4_info(file_stream):
+# এমপি৪ ফাইলের দৈর্ঘ্য ও সাইজ নিখুঁতভাবে বের করার লজিক
+def get_mp4_info(file_path):
     duration = 10.50  # ডিফল্ট
     width, height = 576, 1024  # ডিফল্ট
     try:
-        file_stream.seek(0)
-        data = file_stream.read(50000)
-        file_stream.seek(0)
+        with open(file_path, "rb") as file_stream:
+            data = file_stream.read(50000)
         
-        # ডিউরেশন খোঁজা
         mvhd_idx = data.find(b'mvhd')
         if mvhd_idx != -1:
             version = data[mvhd_idx + 4]
@@ -35,10 +44,8 @@ def get_mp4_info(file_stream):
             if timescale > 0:
                 duration = round(dur / timescale, 2)
                 
-        # রেজোলিউশন খোঁজা
         tkhd_idx = data.find(b'tkhd')
         if tkhd_idx != -1:
-            # সাধারণত tkhd বক্সের শেষে width ও height থাকে (fixed-point 16.16)
             w_bytes = data[tkhd_idx + 76:tkhd_idx + 80]
             h_bytes = data[tkhd_idx + 80:tkhd_idx + 84]
             if len(w_bytes) == 4 and len(h_bytes) == 4:
@@ -51,27 +58,23 @@ def get_mp4_info(file_stream):
     return duration, width, height
 
 if uploaded_file is not None:
-    input_path = "temp_input.mp4"
     output_path = "my_branded_video.mp4"
     thumb_path = "temp_thumb.jpg"
     
-    # ভিডিওর দৈর্ঘ্য ও সাইজ নিখুঁতভাবে বের করা হচ্ছে
-    video_duration, v_width, v_height = get_mp4_info(uploaded_file)
+    # ফাইল রিড করে ক্যাশ মেমোরিতে রাখা হচ্ছে
+    file_bytes = uploaded_file.read()
+    input_path = save_uploaded_video(file_bytes)
     
-    with open(input_path, "wb") as f:
-        f.write(uploaded_file.read())
-        
-    st.success("✅ মূল ভিডিও আপলোড সফল হয়েছে!")
+    video_duration, v_width, v_height = get_mp4_info(input_path)
+    
+    st.success("✅ ভিডিও সার্ভার মেমোরিতে সুরক্ষিত আছে! নেট বারবার কাটবে না।")
     st.markdown("---")
     
     st.markdown("### 📺 ভিডিও প্রিভিউ:")
-    with open(input_path, "rb") as video_file:
-        video_bytes = video_file.read()
-    st.video(video_bytes)
-
+    st.video(file_bytes)
     st.markdown("---")
     
-    # ২. থাম্বনেইল আপলোডার (Optional)
+    # ২. থাম্বনেইল আপলোডার
     st.markdown("### 🖼️ কাস্টম থাম্বনেইল সেটআপ (Optional):")
     uploaded_thumb = st.file_uploader("ভিডিওর শুরুতে থাম্বনেইল লাগাতে চাইলে ছবি সিলেক্ট করুন (JPG/PNG)", type=["jpg", "jpeg", "png"])
     
@@ -102,14 +105,12 @@ if uploaded_file is not None:
         if total_start_seconds >= total_end_seconds:
             st.error("❌ ভুল সিলেকশন! ভিডিওর শেষের সময় অবশ্যই শুরুর সময়ের চেয়ে বেশি হতে হবে।")
         else:
-            with st.spinner("ভিডিও প্রসেস, থাম্বনেইল অ্যাড ও কপিরাইট রিমুভ করার কাজ চলছে..."):
+            with st.spinner("ভিডিও প্রসেস, নিখুঁত অডিও ম্যাচিং ও কপিরাইট রিমুভ করার কাজ চলছে..."):
                 try:
                     if os.path.exists(output_path):
                         os.remove(output_path)
                     
                     ffmpeg_exe = im_ffmpeg.get_ffmpeg_exe()
-                    
-                    # ক্রপ করার পর ভিডিওর নতুন সাইজ হিসাব (যেহেতু চারপাশ থেকে ৪০ পিক্সেল কাটা হচ্ছে)
                     cropped_w = v_width - 40
                     cropped_h = v_height - 40
                     
@@ -119,18 +120,18 @@ if uploaded_file is not None:
                     
                     # যদি ইউজার থাম্বনেইল আপলোড করে
                     if uploaded_thumb is not None and os.path.exists(thumb_path):
-                        # ছবি ও ভিডিওর রেজোলিউশন ম্যাচ করানোর জন্য কাস্টম ফিল্টার সেটআপ (setsar=1 এবং scale ব্যবহার করে)
+                        # ১০০০ মিলিসেকেন্ড (১ সেকেন্ড) অডিও ডিলে করার ফিল্টার যাতে থাম্বনেইলের সাথে অডিও সিঙ্ক হয়
                         filter_complex_cmd = (
                             f"[0:v]scale={cropped_w}:{cropped_h}:force_original_aspect_ratio=decrease,"
                             f"pad={cropped_w}:{cropped_h}:(ow-iw)/2:(oh-ih)/2,setsar=1,setpts=PTS-STARTPTS[v0];"
                             f"[1:v]{vf_filter},setsar=1,setpts=PTS-STARTPTS[v1];"
-                            f"[1:a]{af_filter}[a1];"
+                            f"[1:a]{af_filter},adelay=1000|1000[a1];"
                             f"[v0][v1]concat=n=2:v=1:a=0[v_out]"
                         )
                         
                         command = [
                             ffmpeg_exe, '-y',
-                            '-loop', '1', '-t', '1', '-i', thumb_path,  # ইনপুট ০: থাম্বনেইল ছবি
+                            '-loop', '1', '-t', '1', '-i', thumb_path,  # ইনপুট ০: থাম্বনেইল ছবি (১ সেকেন্ড)
                             '-ss', f"{total_start_seconds:.2f}",
                             '-to', f"{total_end_seconds:.2f}",
                             '-i', input_path,  # ইনপুট ১: মূল ভিডিও
@@ -141,7 +142,7 @@ if uploaded_file is not None:
                             output_path
                         ]
                     else:
-                        # থাম্বনেইল না থাকলে সাধারণ কম্যান্ড
+                        # থাম্বনেইল না থাকলে সাধারণ দ্রুত কম্যান্ড
                         command = [
                             ffmpeg_exe, '-y',
                             '-i', input_path,
@@ -157,22 +158,23 @@ if uploaded_file is not None:
                     result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                     
                     if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
-                        st.success("🎉 আলহামদুলিল্লাহ! থাম্বনেইল ও কাটিং সহ আপনার ভিডিওটি সফলভাবে তৈরি হয়েছে।")
-                        
-                        with open(output_path, "rb") as file:
-                            st.download_button(
-                                label="⬇️ গ্যালারিতে সেভ করুন (Download Video)",
-                                data=file,
-                                file_name="copyright_removed_video.mp4",
-                                mime="video/mp4"
-                            )
+                        st.session_state.video_processed = True
+                        st.success("🎉 আলহামদুলিল্লাহ! থাম্বনেইল, নিখুঁত অডিও এবং কাটিং সহ ভিডিওটি তৈরি হয়েছে।")
                     else:
                         st.error("❌ প্রসেসিং সম্পূর্ণ করা যায়নি। নিচে এরর ডিটেইলস দেওয়া হলো:")
                         st.code(result.stderr)
                     
-                    # সাময়িক ফাইলগুলো ডিলিট করা
-                    if os.path.exists(input_path): os.remove(input_path)
                     if os.path.exists(thumb_path): os.remove(thumb_path)
                     
                 except Exception as e:
                     st.error(f"দুঃখিত, একটি ইন্টারনাল এরর হয়েছে: {str(e)}")
+
+    # ফাইল প্রসেস শেষে ডাউনলোড বাটনটি স্ক্রিনে লক হয়ে থাকবে (রিলোড হলেও কাটবে না)
+    if st.session_state.video_processed and os.path.exists("my_branded_video.mp4"):
+        with open("my_branded_video.mp4", "rb") as file:
+            st.download_button(
+                label="⬇️ গ্যালারিতে সেভ করুন (Download Video)",
+                data=file,
+                file_name="copyright_removed_video.mp4",
+                mime="video/mp4"
+            )
