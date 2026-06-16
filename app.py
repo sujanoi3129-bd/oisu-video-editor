@@ -10,7 +10,7 @@ st._config.set_option("server.maxUploadSize", 2000)
 st.set_page_config(page_title="Smart Video Editor Pro", page_icon="🎬", layout="centered")
 
 st.title("🎬 Anti-Copyright Master Video Engine")
-st.write("সুজন ভাই, এখন বড় ও স্টাইলিশ ফন্টে পেজের নাম ডানপাশে ওপরে নিখুঁতভাবে আসবে ইনশাআল্লাহ!")
+st.write("সুজন ভাই, এখন নিজের চোখে দেখে পেজের নামের সাইজ ও পজিশন নিখুঁতভাবে অ্যাডজাস্ট করুন!")
 
 # অস্থায়ী ফাইল ট্র্যাকিং পাথসমূহ
 v_start = "temp_0_input.mp4"
@@ -144,17 +144,23 @@ elif st.session_state.step == 2:
                 if os.path.exists(v_step1): os.remove(v_step1)
 
 # ==========================================
-# 🟢 🎬 🎯 💥 ধাপ ৩: পেজের নাম (Watermark) - ফন্ট বড়, বোল্ড ও নিখুঁত বক্স
+# 🟢 🎬 🎯 ধাপ ৩: কাস্টম সাইজ ও পজিশন অ্যাডজাস্টমেন্ট কন্ট্রোল প্যানেল
 # ==========================================
 elif st.session_state.step == 3:
-    st.header("Step ৩: আপনার পেজের নাম (Branding)")
-    st.write("আপনার পেজের নাম লিখুন। এটি ডানপাশে ওপরে প্রফেশনাল লোগোর মতো সুন্দর বক্সে ফুটে উঠবে।")
+    st.header("Step ৩: পেজের নাম সাজানো ও নিখুঁত অ্যাডজাস্টমেন্ট")
+    st.write("লেখাটি ডানপাশেই থাকবে। নিচের স্লাইডারগুলো ব্যবহার করে সাইজ এবং পজিশন সুন্দর মতো ম্যাচ করিয়ে নিন।")
     
-    page_name = st.text_input("আপনার পেজের নাম এখানে লিখুন:", placeholder="ToonFlix")
+    page_name = st.text_input("আপনার পেজের নাম এখানে লিখুন:", value="ToonFlix")
     
-    if st.button("✍️ ৩. পেজের নাম যুক্ত করুন"):
+    # প্রফেশনাল স্লাইডার কন্ট্রোলসমূহ
+    st.markdown("### 🎛️ টেক্সট কন্ট্রোল প্যানেল:")
+    font_size = st.slider("📐 লেখার সাইজ বড়/ছোট করুন (Font Size):", min_value=20, max_value=120, value=50, step=5)
+    padding_right = st.slider("⬅️ ডান কোণা থেকে কতটা ভেতরে আনবেন (Right Margin):", min_value=10, max_value=300, value=50, step=5)
+    padding_top = st.slider("⬇️ উপর থেকে কতটা নিচে নামাবেন (Top Margin):", min_value=10, max_value=300, value=40, step=5)
+    
+    if st.button("✍️ ৩. এই মাপে পেজের নাম লক করুন"):
         if page_name:
-            with st.spinner("ভিডিওর ওপরে নাম সেট করা হচ্ছে..."):
+            with st.spinner("আপনার দেওয়া মাপে নাম সেট করা হচ্ছে..."):
                 try:
                     if st.session_state.video_data is not None:
                         save_bytes_to_file(st.session_state.video_data, v_step2)
@@ -176,36 +182,33 @@ elif st.session_state.step == 3:
                                                 break
                                         except: pass
 
-                        # Pillow দিয়ে সম্পূর্ণ নতুন ট্রান্সপারেন্ট ইমেজ তৈরি
+                        # Pillow ট্রান্সপারেন্ট ক্যানভাস তৈরি
                         w_img = Image.new('RGBA', (v_w, v_h), (255, 255, 255, 0))
                         draw = ImageDraw.Draw(w_img)
-                        
-                        # 🎯 ফন্টের অনুপাত বাড়িয়ে বড় করা হলো (প্রস্থের ৮%) যেন দূর থেকেও সুন্দর লাগে
-                        font_scale = max(45, int(v_w * 0.08))
                         font = ImageFont.load_default()
                         
-                        # টেক্সটের সাইজ নিখুঁতভাবে মাপা
-                        text_w = int(len(page_name) * (font_scale * 0.65))
-                        text_h = int(font_scale * 1.5)
+                        # স্লাইডারের ফন্ট সাইজ অনুযায়ী নিখুঁত টেক্সট এরিয়া গণনা
+                        text_w = int(len(page_name) * (font_size * 0.60))
+                        text_h = int(font_size * 1.3)
                         
-                        # 🎯 ডানপাশের ওপরে নিখুঁত পজিশন সেট
-                        tx = v_w - text_w - 60  # ডান কোণা থেকে ৬০ পিক্সেল ভেতরে
-                        ty = 50                 # উপর থেকে ৫০ পিক্সেল নিচে
+                        # ডান পাশে লক রেখে স্লাইডারের মান অনুযায়ী ডাইনামিক পজিশন
+                        tx = v_w - text_w - padding_right
+                        ty = padding_top
                         
-                        # 🎯 কালো বক্সটিকে একদম লেখার মাপে টাইট এবং প্রফেশনাল করা হলো (No Extra Blank Area)
-                        bx1, by1 = tx - 20, ty - 10
-                        bx2, by2 = tx + text_w + 20, ty + text_h + 10
+                        # কালো ব্যাকগ্রাউন্ড বক্সটিকে লেখার মাপে একদম টাইট রাখা হলো
+                        bx1, by1 = tx - 15, ty - 8
+                        bx2, by2 = tx + text_w + 15, ty + text_h + 4
                         
-                        # সামান্য স্বচ্ছ গাঢ় কালো রঙের রাউন্ডেড স্টাইলিশ ব্যাকগ্রাউন্ড বক্স
-                        draw.rounded_rectangle([bx1, by1, bx2, by2], radius=12, fill=(0, 0, 0, 200))
+                        # রাউন্ডেড স্টাইলিশ কালো ব্যাকগ্রাউন্ড বক্স
+                        draw.rounded_rectangle([bx1, by1, bx2, by2], radius=10, fill=(0, 0, 0, 190))
                         
-                        # 🎯 টেক্সটকে মোটা (Bold) করার জন্য মাল্টি-অফসেট ওভারল্যাপ টেকনিক
-                        for offset in [(0,0), (1,0), (2,0), (0,1), (1,1), (2,1), (0,2), (1,2), (2,2)]:
+                        # ফন্ট বোল্ড করার জন্য নিখুঁত মাল্টি-লেয়ার ওভারল্যাপ প্রিন্ট
+                        for offset in [(0,0), (1,0), (2,0), (0,1), (1,1), (2,1), (0,2), (1,2)]:
                             draw.text((tx + offset[0], ty + offset[1]), page_name, fill=(255, 255, 255, 255), font=font)
                             
                         w_img.save(watermark_path)
                         
-                        # এফএফএমপ্যাগ ওভারলে ফিল্টার রান করা
+                        # এফএফএমপ্যাগ ওভারলে রান
                         cmd = [
                             ffmpeg_exe, '-y', '-i', v_step2, '-i', watermark_path,
                             '-filter_complex', '[0:v][1:v]overlay=0:0:shortest=0,format=yuv420p[v]',
@@ -216,7 +219,7 @@ elif st.session_state.step == 3:
                         
                         if os.path.exists(v_step3) and os.path.getsize(v_step3) > 0:
                             with open(v_step3, "rb") as f: st.session_state.video_data = f.read()
-                            st.success("✅ পেজের নাম বড় ও স্টাইলিশ বক্সে ওপরে লক করা হয়েছে!")
+                            st.success("✅ আপনার দেওয়া সাইজ ও পজিশনে পেজের নাম সেট হয়েছে!")
                             st.session_state.step = 4
                             st.rerun()
                         else:
