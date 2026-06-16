@@ -8,8 +8,8 @@ st._config.set_option("server.maxUploadSize", 2000)
 
 st.set_page_config(page_title="Smart Video Copyright Remover", page_icon="🛡️", layout="centered")
 
-st.title("🛡️ Smart Video Copyright Remover (Branding Fixed)")
-st.write("ভিডিও উল্টানো ছাড়া, কড়া অডিও চেঞ্জার এবং পেজের নাম বসানোর ১০০% সফল সিস্টেম!")
+st.title("🛡️ Smart Video Copyright Remover (Branding Core Fixed)")
+st.write("ভিডিওর সাইজ যাই হোক না কেন, নাম একদম মাঝখানে পরিষ্কার দেখা যাবে ভাই!")
 
 st.markdown("---")
 st.subheader("১. ভিডিও এবং থাম্বনেইল আপলোড করুন")
@@ -41,28 +41,38 @@ if uploaded_video is not None:
     voice_style = st.selectbox("ভয়েজ ও সুর পরিবর্তনের মোড সিলেক্ট করুন:", [
         "🔥 High Security Voice Changer (পিচ ভারী + ৩% স্পিড চেঞ্জ - সবচেয়ে নিরাপদ)",
         "🎵 Creative Lo-Fi Vibe (হালকা ইকো + ২% গতি বৃদ্ধি)",
-        "🎙️ Deep Cinematic Echo (রহস্যময় গম্ভীর কণ্ঠ - দ্য আননোন কোডেক্স স্পেশাল)"
+        "🎙️ Deep Cinematic Echo (রহস্যময় গম্ভীর কণ্ঠ)"
     ])
 
     st.markdown("---")
     st.subheader("৩. আপনার পেজের নাম (Watermark / Branding)")
     page_name = st.text_input("আপনার ফেসবুক পেজ বা ইউটিউব চ্যানেলের নাম লিখুন:", placeholder="ToonFlix")
 
-    if st.button("🚀 কপিরাইট রিমুভ ও প্রসেস শুরু করুন"):
-        with st.spinner("ভিডিও সোজা রেখে কালার গ্রেডিং, অডিও ট্র্যাক এবং পেজের নাম যুক্ত করা হচ্ছে..."):
+    if st.button("🚀 কপিরাইট রিমুভ ও ব্র্যান্ডেড ভিডিও তৈরি করুন"):
+        with st.spinner("ভিডিও মডিফাই এবং পেজের নাম স্ক্রিনের মাঝে যুক্ত করা হচ্ছে..."):
             try:
                 ffmpeg_exe = im_ffmpeg.get_ffmpeg_exe()
                 
-                # ১. ভিডিও ফিল্টার চেইন (ক্রপ, কালার ফিক্সিং এবং স্কেল এক সাথে সাজানো হলো)
-                video_filters = "crop=in_w*0.97:in_h*0.97:in_w*0.015:in_h*0.015,eq=contrast=1.07:brightness=0.02:saturation=1.05,scale=1280:720"
+                # ভিডিও ফিল্টার: লেখা সোজা রেখে ৩% জুম এবং কালার গ্রেডিং
+                base_video_filters = "crop=in_w*0.97:in_h*0.97:in_w*0.015:in_h*0.015,eq=contrast=1.07:brightness=0.02:saturation=1.05"
                 
-                # যদি ইউজার পেজের নাম দেয়, তবে ফিল্টারগ্রাফে সুন্দরভাবে টেক্সট ফিল্টার যোগ হবে (কোনো এরর আসবে না)
                 if page_name:
-                    # নামের ভেতরের স্পেস বা কোলন এস্কেপ করার জন্য সুরক্ষিত ফরম্যাট
+                    # নামের ভেতরের স্পেস সুরক্ষিত করা হলো
                     safe_page_name = page_name.replace(":", "\\:").replace("'", "")
-                    video_filters += f",drawtext=fontfile='/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf':text='{safe_page_name}':x=w-tw-30:y=h-th-30:fontsize=26:fontcolor=white@0.6:shadowcolor=black:shadowx=2:shadowy=2"
+                    
+                    # পজিশন ট্রিক: x=(w-tw)/2 মানে ভিডিও খাড়া হোক বা শুয়ানো, টেক্সট সবসময় একদম মাঝখানে (Center) থাকবে।
+                    # y=h-th-50 মানে ভিডিওর একদম নিচের বর্ডার থেকে ৫০ পিক্সেল উপরে থাকবে যাতে কেটে না যায়।
+                    # ফন্টের ঝামেলা এড়াতে সার্ভারের ডিফল্ট ফন্ট 'Sans' ব্যবহার করা হয়েছে এবং সাইজ বাড়িয়ে ৩০ করা হয়েছে।
+                    branding_filter = (
+                        f",drawtext=font='Sans':text='{safe_page_name}':"
+                        f"x=(w-tw)/2:y=h-th-50:fontsize=30:fontcolor=white@0.7:"
+                        f"shadowcolor=black:shadowx=2:shadowy=2"
+                    )
+                    video_filters = base_video_filters + branding_filter
+                else:
+                    video_filters = base_video_filters
                 
-                # ২. অডিও ফিল্টার চেইন
+                # অডিও ফিল্টার চেইন (১০০% কপিরাইট ফ্রি করার জন্য)
                 if "High Security Voice Changer" in voice_style:
                     audio_filters = "asetrate=44100*0.93,atempo=1.07,bass=g=5"
                 elif "Creative Lo-Fi Vibe" in voice_style:
@@ -70,7 +80,7 @@ if uploaded_video is not None:
                 else:
                     audio_filters = "asetrate=44100*0.90,atempo=1.11,aecho=0.8:0.90:35:0.3,bass=g=6"
                 
-                # ৩. এফএফএমপেগ কমান্ড মেকিং
+                # এফএফএমপেগ কমান্ড মেকিং
                 if uploaded_image is not None:
                     command = [
                         ffmpeg_exe, '-y',
@@ -93,11 +103,10 @@ if uploaded_video is not None:
                         output_video_path
                     ]
                 
-                # কমান্ড রান করা
                 result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                 
                 if os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
-                    st.success("🎉 আলহামদুলিল্লাহ ভাই! পেজের নাম সহ ভিডিও সফলভাবে তৈরি হয়েছে।")
+                    st.success("🎉 আলহামদুলিল্লাহ ভাই! এবার পেজের নাম সহ ব্র্যান্ডেড ভিডিও সফলভাবে তৈরি হয়েছে।")
                     st.subheader("📺 ভিডিও প্রিভিউ:")
                     
                     with open(output_video_path, "rb") as video_file:
@@ -105,7 +114,7 @@ if uploaded_video is not None:
                         
                     with open(output_video_path, "rb") as file:
                         st.download_button(
-                            label="⬇️ গ্যালারিতে সেভ করুন (Download Safe Video)",
+                            label="⬇️ গ্যালারিতে সেভ করুন (Download Branded Video)",
                             data=file,
                             file_name="branded_copyright_free_video.mp4",
                             mime="video/mp4"
