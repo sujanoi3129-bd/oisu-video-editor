@@ -8,8 +8,8 @@ st._config.set_option("server.maxUploadSize", 2000)
 
 st.set_page_config(page_title="Smart Video Copyright Remover", page_icon="🛡️", layout="centered")
 
-st.title("🛡️ Smart Video Copyright Remover (Advanced Audio Edition)")
-st.write("ভিডিও উল্টানো ছাড়া এবং কড়া অডিও পিচ ও স্পিড চেঞ্জার সহ সম্পূর্ণ নিরাপদ সিস্টেম!")
+st.title("🛡️ Smart Video Copyright Remover (Branding Fixed)")
+st.write("ভিডিও উল্টানো ছাড়া, কড়া অডিও চেঞ্জার এবং পেজের নাম বসানোর ১০০% সফল সিস্টেম!")
 
 st.markdown("---")
 st.subheader("১. ভিডিও এবং থাম্বনেইল আপলোড করুন")
@@ -37,9 +37,7 @@ if uploaded_video is not None:
 
     st.markdown("---")
     st.subheader("২. অ্যান্টি-কপিরাইট ভয়েস এবং অডিও মোড")
-    st.write("💡 এখান থেকে যেকোনো একটি মোড সিলেক্ট করুন। প্রতিটি মোড অডিওর মেটাডেটা ও সুর সম্পূর্ণ চেঞ্জ করে দেবে যাতে কপিরাইট না আসে।")
     
-    # অডিও সম্পূর্ণ পরিবর্তন করার ৩টি প্রিমিয়াম সিকিউরিটি অপশন
     voice_style = st.selectbox("ভয়েজ ও সুর পরিবর্তনের মোড সিলেক্ট করুন:", [
         "🔥 High Security Voice Changer (পিচ ভারী + ৩% স্পিড চেঞ্জ - সবচেয়ে নিরাপদ)",
         "🎵 Creative Lo-Fi Vibe (হালকা ইকো + ২% গতি বৃদ্ধি)",
@@ -48,39 +46,31 @@ if uploaded_video is not None:
 
     st.markdown("---")
     st.subheader("৩. আপনার পেজের নাম (Watermark / Branding)")
-    page_name = st.text_input("আপনার ফেসবুক পেজ বা ইউটিউব চ্যানেলের নাম লিখুন:", placeholder="The Unknown Codex")
+    page_name = st.text_input("আপনার ফেসবুক পেজ বা ইউটিউব চ্যানেলের নাম লিখুন:", placeholder="ToonFlix")
 
     if st.button("🚀 কপিরাইট রিমুভ ও প্রসেস শুরু করুন"):
-        with st.spinner("ভিডিও সোজা রেখে কালার গ্রেডিং এবং অডিও ট্র্যাক সম্পূর্ণ পরিবর্তন করা হচ্ছে..."):
+        with st.spinner("ভিডিও সোজা রেখে কালার গ্রেডিং, অডিও ট্র্যাক এবং পেজের নাম যুক্ত করা হচ্ছে..."):
             try:
                 ffmpeg_exe = im_ffmpeg.get_ffmpeg_exe()
                 
-                # ভিডিও ফিল্টার: লেখা সোজা রেখে ৩% জুম এবং কালার মডিফিকেশন
-                base_video_filters = "crop=in_w*0.97:in_h*0.97:in_w*0.015:in_h*0.015,eq=contrast=1.07:brightness=0.02:saturation=1.05,scale=1280:720"
+                # ১. ভিডিও ফিল্টার চেইন (ক্রপ, কালার ফিক্সিং এবং স্কেল এক সাথে সাজানো হলো)
+                video_filters = "crop=in_w*0.97:in_h*0.97:in_w*0.015:in_h*0.015,eq=contrast=1.07:brightness=0.02:saturation=1.05,scale=1280:720"
                 
+                # যদি ইউজার পেজের নাম দেয়, তবে ফিল্টারগ্রাফে সুন্দরভাবে টেক্সট ফিল্টার যোগ হবে (কোনো এরর আসবে না)
                 if page_name:
-                    branding_filter = (
-                        f",drawtext=fontfile='/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf':"
-                        f"text='{page_name}':x=w-tw-30:y=h-th-30:fontsize=26:fontcolor=white@0.6:"
-                        f"shadowcolor=black:shadowx=2:shadowy=2"
-                    )
-                    video_filters = base_video_filters + branding_filter
-                else:
-                    video_filters = base_video_filters
+                    # নামের ভেতরের স্পেস বা কোলন এস্কেপ করার জন্য সুরক্ষিত ফরম্যাট
+                    safe_page_name = page_name.replace(":", "\\:").replace("'", "")
+                    video_filters += f",drawtext=fontfile='/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf':text='{safe_page_name}':x=w-tw-30:y=h-th-30:fontsize=26:fontcolor=white@0.6:shadowcolor=black:shadowx=2:shadowy=2"
                 
-                # ==================== কড়া অডিও ফিল্টার চেইন ====================
+                # ২. অডিও ফিল্টার চেইন
                 if "High Security Voice Changer" in voice_style:
-                    #asetrate দিয়ে পিচ সামান্য ডাউন (0.93) এবং স্পিড অ্যাডজাস্ট করার জন্য atempo। এতে ভয়েস মেলা অসম্ভব।
                     audio_filters = "asetrate=44100*0.93,atempo=1.07,bass=g=5"
                 elif "Creative Lo-Fi Vibe" in voice_style:
-                    # গতি ৩% বাড়িয়ে দেওয়া হলো এবং হালকা ইকো যোগ করা হলো
                     audio_filters = "atempo=1.03,aecho=0.8:0.85:25:0.2,treble=g=2"
                 else:
-                    # গভীর ও গম্ভীর রহস্যময় ভয়েস ইফেক্ট
                     audio_filters = "asetrate=44100*0.90,atempo=1.11,aecho=0.8:0.90:35:0.3,bass=g=6"
-                # =============================================================
                 
-                # এফএফএমপেগ কমান্ড এক্সিকিউশন
+                # ৩. এফএফএমপেগ কমান্ড মেকিং
                 if uploaded_image is not None:
                     command = [
                         ffmpeg_exe, '-y',
@@ -89,7 +79,7 @@ if uploaded_video is not None:
                         '-filter_complex', f"[0:v]{video_filters}[v];[0:a]{audio_filters}[a]",
                         '-map', '[v]', '-map', '[a]',
                         '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
-                        '-c:a', 'aac', '-b:a', '192k', # অডিও বিটরেট ভালো রাখা হলো
+                        '-c:a', 'aac', '-b:a', '192k',
                         output_video_path
                     ]
                 else:
@@ -103,10 +93,11 @@ if uploaded_video is not None:
                         output_video_path
                     ]
                 
+                # কমান্ড রান করা
                 result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                 
                 if os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
-                    st.success("🎉 আলহামদুলিল্লাহ ভাই! ভিডিওর লেখা সোজা রেখে অডিও ও ভয়েস সফলভাবে পরিবর্তন করা হয়েছে।")
+                    st.success("🎉 আলহামদুলিল্লাহ ভাই! পেজের নাম সহ ভিডিও সফলভাবে তৈরি হয়েছে।")
                     st.subheader("📺 ভিডিও প্রিভিউ:")
                     
                     with open(output_video_path, "rb") as video_file:
@@ -120,11 +111,11 @@ if uploaded_video is not None:
                             mime="video/mp4"
                         )
                 else:
-                    st.error("❌ ভিডিও প্রসেস করতে ঝামেলা হয়েছে ভাই।")
+                    st.error("❌ ফিল্টার প্রসেস করতে ঝামেলা হয়েছে ভাই। নিচে এরর কোড দেওয়া হলো:")
                     st.code(result.stderr)
                     
             except Exception as e:
-                st.error(f"দুঃখিত ভাই, এরর: {str(e)}")
+                st.error(f"দুঃখিত ভাই, ইন্টারনাল এরর: {str(e)}")
             finally:
                 if os.path.exists(input_video_path): os.remove(input_video_path)
                 if os.path.exists(input_image_path): os.remove(input_image_path)
