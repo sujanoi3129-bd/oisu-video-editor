@@ -15,33 +15,48 @@ st.write("ভিডিও আপলোড করুন, কাটিং পয়�
 # ১. ভিডিও আপলোডার
 uploaded_file = st.file_uploader("১. গ্যালারি থেকে মূল ভিডিও সিলেক্ট করুন (সর্বোচ্চ ২ GB)", type=["mp4"])
 
-# এমপি৪ ফাইলের হেডার থেকে দৈর্ঘ্য বের করার লজিক
-def get_mp4_duration(file_stream):
+# এমপি৪ ফাইলের দৈর্ঘ্য (Duration) এবং রেজোলিউশন (Width, Height) বের করার লজিক
+def get_mp4_info(file_stream):
+    duration = 10.50  # ডিফল্ট
+    width, height = 576, 1024  # ডিফল্ট
     try:
         file_stream.seek(0)
-        data = file_stream.read(10000)
+        data = file_stream.read(50000)
         file_stream.seek(0)
         
+        # ডিউরেশন খোঁজা
         mvhd_idx = data.find(b'mvhd')
         if mvhd_idx != -1:
             version = data[mvhd_idx + 4]
             if version == 0:
-                timescale, duration = struct.unpack('>II', data[mvhd_idx + 16:mvhd_idx + 24])
+                timescale, dur = struct.unpack('>II', data[mvhd_idx + 16:mvhd_idx + 24])
             else:
-                timescale, duration = struct.unpack('>QQ', data[mvhd_idx + 20:mvhd_idx + 36])
-            
+                timescale, dur = struct.unpack('>QQ', data[mvhd_idx + 20:mvhd_idx + 36])
             if timescale > 0:
-                return round(duration / timescale, 2)
+                duration = round(dur / timescale, 2)
+                
+        # রেজোলিউশন খোঁজা
+        tkhd_idx = data.find(b'tkhd')
+        if tkhd_idx != -1:
+            # সাধারণত tkhd বক্সের শেষে width ও height থাকে (fixed-point 16.16)
+            w_bytes = data[tkhd_idx + 76:tkhd_idx + 80]
+            h_bytes = data[tkhd_idx + 80:tkhd_idx + 84]
+            if len(w_bytes) == 4 and len(h_bytes) == 4:
+                w = struct.unpack('>I', w_bytes)[0] >> 16
+                h = struct.unpack('>I', h_bytes)[0] >> 16
+                if w > 0 and h > 0:
+                    width, height = w, h
     except:
         pass
-    return 10.50
+    return duration, width, height
 
 if uploaded_file is not None:
     input_path = "temp_input.mp4"
     output_path = "my_branded_video.mp4"
     thumb_path = "temp_thumb.jpg"
     
-    video_duration = get_mp4_duration(uploaded_file)
+    # ভিডিওর দৈর্ঘ্য ও সাইজ নিখুঁতভাবে বের করা হচ্ছে
+    video_duration, v_width, v_height = get_mp4_info(uploaded_file)
     
     with open(input_path, "wb") as f:
         f.write(uploaded_file.read())
@@ -56,7 +71,7 @@ if uploaded_file is not None:
 
     st.markdown("---")
     
-    # ২. থাম্বনেইল আপলোডার (ঐচ্ছিক/Optional)
+    # ২. থাম্বনেইল আপলোডার (Optional)
     st.markdown("### 🖼️ কাস্টম থাম্বনেইল সেটআপ (Optional):")
     uploaded_thumb = st.file_uploader("ভিডিওর শুরুতে থাম্বনেইল লাগাতে চাইলে ছবি সিলেক্ট করুন (JPG/PNG)", type=["jpg", "jpeg", "png"])
     
@@ -94,27 +109,39 @@ if uploaded_file is not None:
                     
                     ffmpeg_exe = im_ffmpeg.get_ffmpeg_exe()
                     
+                    # ক্রপ করার পর ভিডিওর নতুন সাইজ হিসাব (যেহেতু চারপাশ থেকে ৪০ পিক্সেল কাটা হচ্ছে)
+                    cropped_w = v_width - 40
+                    cropped_h = v_height - 40
+                    
                     # কপিরাইট রিমুভার বেস ফিল্টার
                     vf_filter = "crop=iw-40:ih-40:20:20,eq=brightness=0.04:contrast=1.04:saturation=1.05"
                     af_filter = "asetrate=44100*1.05,atempo=1.02"
                     
                     # যদি ইউজার থাম্বনেইল আপলোড করে
                     if uploaded_thumb is not None and os.path.exists(thumb_path):
-                        # ছবিটিকে ভিডিওর শুরুতে ১ সেকেন্ডের জন্য জোড়া দেওয়ার ১০০% সেফ এবং এররমুক্ত কম্যান্ড
+                        # ছবি ও ভিডিওর রেজোলিউশন ম্যাচ করানোর জন্য কাস্টম ফিল্টার সেটআপ (setsar=1 এবং scale ব্যবহার করে)
+                        filter_complex_cmd = (
+                            f"[0:v]scale={cropped_w}:{cropped_h}:force_original_aspect_ratio=decrease,"
+                            f"pad={cropped_w}:{cropped_h}:(ow-iw)/2:(oh-ih)/2,setsar=1,setpts=PTS-STARTPTS[v0];"
+                            f"[1:v]{vf_filter},setsar=1,setpts=PTS-STARTPTS[v1];"
+                            f"[1:a]{af_filter}[a1];"
+                            f"[v0][v1]concat=n=2:v=1:a=0[v_out]"
+                        )
+                        
                         command = [
                             ffmpeg_exe, '-y',
                             '-loop', '1', '-t', '1', '-i', thumb_path,  # ইনপুট ০: থাম্বনেইল ছবি
                             '-ss', f"{total_start_seconds:.2f}",
                             '-to', f"{total_end_seconds:.2f}",
                             '-i', input_path,  # ইনপুট ১: মূল ভিডিও
-                            '-filter_complex', f"[0:v]scale=576:722,setpts=PTS-STARTPTS[v0];[1:v]{vf_filter},scale=576:722,setpts=PTS-STARTPTS[v1];[1:a]{af_filter}[a1];[v0][v1]concat=n=2:v=1:a=0[v_out]",
+                            '-filter_complex', filter_complex_cmd,
                             '-map', '[v_out]', '-map', '[a1]',
                             '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '22',
                             '-c:a', 'aac',
                             output_path
                         ]
                     else:
-                        # থাম্বনেইল না থাকলে সাধারণ কম্যান্ড রান হবে
+                        # থাম্বনেইল না থাকলে সাধারণ কম্যান্ড
                         command = [
                             ffmpeg_exe, '-y',
                             '-i', input_path,
