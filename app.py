@@ -9,8 +9,8 @@ st._config.set_option("server.maxUploadSize", 2000)
 
 st.set_page_config(page_title="Smart Video Copyright Remover", page_icon="🛡️", layout="centered")
 
-st.title("🛡️ Smart Video Copyright Remover (Final Perfection)")
-st.write("ভিডিওর সাইজ অটোমেটিক মেপে পেজের নাম একদম স্ক্রিনের ভেতর নিখুঁতভাবে বসানোর ফাইনাল কোড ভাই!")
+st.title("🛡️ Smart Video Copyright Remover (Master Edition)")
+st.write("থাম্বনেইল এবং পেজের নাম ভিডিওর ওপরে ১০০% ফুটিয়ে তোলার ফাইনাল ফিক্সড কোড ভাই!")
 
 st.markdown("---")
 st.subheader("১. ভিডিও এবং থাম্বনেইল আপলোড করুন")
@@ -43,69 +43,41 @@ if uploaded_video is not None:
     voice_style = st.selectbox("ভয়েজ ও সুর পরিবর্তনের মোড সিলেক্ট করুন:", [
         "🔥 High Security Voice Changer (পিচ ভারী + ৩% স্পিড চেঞ্জ - সবচেয়ে নিরাপদ)",
         "🎵 Creative Lo-Fi Vibe (হালকা ইকো + ২% গতি বৃদ্ধি)",
-        "🎙️ Deep Cinematic Echo (রহময় গম্ভীর কণ্ঠ)"
+        "🎙️ Deep Cinematic Echo (রহস্যময় গম্ভীর কণ্ঠ)"
     ])
 
     st.markdown("---")
     st.subheader("৩. আপনার পেজের নাম (Watermark / Branding)")
-    page_name = st.text_input("আপনার ফেসবুক পেজ বা ইউটিউব চ্যানেলের নাম লিখুন:", placeholder="Toonflix")
+    page_name = st.text_input("আপনার ফেসবুক পেজ বা ইউটিউব চ্যানেলের নাম লিখুন:", placeholder="ToonFlix")
 
     if st.button("🚀 কপিরাইট রিমুভ ও ব্র্যান্ডেড ভিডিও তৈরি করুন"):
-        with st.spinner("ভিডিওর সাইজ মেপে পেজের নাম নিখুঁত পজিশনে বসানো হচ্ছে..."):
+        with st.spinner("ভিডিও মডিফাই, থাম্বনেইল সেট এবং পেজের নাম ওপরে বসানো হচ্ছে..."):
             try:
                 ffmpeg_exe = im_ffmpeg.get_ffmpeg_exe()
                 
-                # --- ট্রিক ১: এফএফএমপেগ দিয়ে ভিডিওর আসল সাইজ (Width & Height) বের করা ---
-                probe_command = [
-                    ffmpeg_exe, '-i', input_video_path
-                ]
-                probe_result = subprocess.run(probe_command, stderr=subprocess.PIPE, text=True)
-                
-                # ডিফল্ট সাইজ ধরে রাখা (যদি ডিটেক্ট করতে না পারে)
-                video_w, video_h = 1280, 720
-                
-                # এফএফএমপেগের আউটপুট থেকে সাইজ খুঁজে বের করার চেষ্টা
-                for line in probe_result.stderr.split('\n'):
-                    if 'Video:' in line and ',' in line:
-                        parts = line.split(',')
-                        for part in parts:
-                            if 'x' in part and ('[SAR' in part or part.strip().split(' ')[0].replace('x','').isdigit()):
-                                try:
-                                    dimensions = part.strip().split(' ')[0].split('x')
-                                    if len(dimensions) >= 2:
-                                        video_w = int(dimensions[0])
-                                        video_h = int(dimensions[1])
-                                        break
-                                except:
-                                    pass
-                
-                # --- ট্রিক ২: ভিডিওর আসল সাইজ অনুযায়ী ওয়াটারমার্ক ছবি তৈরি করা ---
+                # --- নিখুঁত ওয়াটারমার্ক ইমেজ তৈরি (স্থির সাইজ ১৯২০x১০৮০ দিয়ে করা হলো যাতে সব বড় ভিডিও কভার করে) ---
                 if page_name:
-                    # ভিডিওর এক্সাক্ট সাইজের সমান একটি স্বচ্ছ ছবি তৈরি
-                    w_img = Image.new('RGBA', (video_w, video_h), (255, 255, 255, 0))
+                    w_img = Image.new('RGBA', (1920, 1080), (255, 255, 255, 0))
                     draw = ImageDraw.Draw(w_img)
                     
-                    # ভিডিওর সাইজ অনুযায়ী ফন্ট সাইজ মানানসই করা হলো
-                    dynamic_font_size = max(18, int(video_w * 0.04)) # চওড়ার ৪% সাইজ হবে ফন্ট
-                    
                     try:
-                        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", dynamic_font_size)
+                        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 45)
                     except:
                         font = ImageFont.load_default()
                     
-                    # স্ক্রিনের একদম মাঝখানে এবং নিচ থেকে ৮% উপরে টেক্সট পজিশন করা হলো
-                    text_x = int(video_w / 2)
-                    text_y = int(video_h * 0.92)
+                    # ১৯২০x১০৮০ স্ক্রিনের জন্য নিচের দিকে মাঝখানের পজিশন
+                    text_x = 960
+                    text_y = 1000
                     
-                    # কালো স্ট্রোক/বর্ডার (৪ পাশে)
-                    for offset in [(-2,-2), (2,-2), (-2,2), (2,2)]:
+                    # ৪ পাশে কালো স্ট্রোক বর্ডার (যাতে লেখা পরিষ্কার বুঝা যায়)
+                    for offset in [(-3,-3), (3,-3), (-3,3), (3,3)]:
                         draw.text((text_x + offset[0], text_y + offset[1]), page_name, fill="black", font=font, anchor="mm")
-                    # মূল সাদা লেখা
-                    draw.text((text_x, text_y), page_name, fill=(255, 255, 255, 180), font=font, anchor="mm")
+                    # মূল সাদা ওয়াটারমার্ক
+                    draw.text((text_x, text_y), page_name, fill=(255, 255, 255, 200), font=font, anchor="mm")
                     w_img.save(watermark_path)
                 
-                # ভিডিও ফিল্টার চেইন: লেখা সোজা রেখে ৩% জুম এবং কালার গ্রেডিং
-                video_filters = "crop=in_w*0.97:in_h*0.97:in_w*0.015:in_h*0.015,eq=contrast=1.07:brightness=0.02:saturation=1.05,fps=25"
+                # ভিডিও ফিল্টার চেইন: লেখা সোজা রাখা, ৩% জুম, কালার মিক্স এবং স্ট্যান্ডার্ড ফুল এইচডি স্কেলিং
+                video_filters = "crop=in_w*0.97:in_h*0.97:in_w*0.015:in_h*0.015,eq=contrast=1.07:brightness=0.02:saturation=1.05,scale=1920:1080,fps=25"
                 
                 # অডিও ফিল্টার চেইন
                 if "High Security Voice Changer" in voice_style:
@@ -115,15 +87,20 @@ if uploaded_video is not None:
                 else:
                     audio_filters = "asetrate=44100*0.90,atempo=1.11,aecho=0.8:0.90:35:0.3,bass=g=6"
                 
-                # এফএফএমপেগ কম্যান্ড এক্সিকিউশন
+                # --- এফএফএমপেগ কম্যান্ড মেকিং (ওভারলে সিস্টেম একদম ওপরে রাখার লজিক) ---
                 if page_name and os.path.exists(watermark_path):
                     if uploaded_image is not None:
+                        # থাম্বনেইল ছবিকেও ১৯২০x১০৮০ সাইজে স্কেল করে ভিডিওর শুরুতে ৫ সেকেন্ডের জন্য ওপরে বসানো হলো
                         command = [
                             ffmpeg_exe, '-y',
                             '-i', input_video_path,
                             '-i', input_image_path,
                             '-i', watermark_path,
-                            '-filter_complex', f"[0:v]{video_filters}[vbase];[vbase][2:v]overlay=0:0:shortest=0[v];[0:a]{audio_filters}[a]",
+                            '-filter_complex', 
+                            f"[0:v]{video_filters}[vbase];"
+                            f"[1:v]scale=1920:1080[thumb];"
+                            f"[vbase][thumb]overlay=enable='lte(t,5)':shortest=0[vthumb];"
+                            f"[vthumb][2:v]overlay=0:0:shortest=0[v];[0:a]{audio_filters}[a]",
                             '-map', '[v]', '-map', '[a]',
                             '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
                             '-c:a', 'aac', '-b:a', '192k',
@@ -141,13 +118,16 @@ if uploaded_video is not None:
                             output_video_path
                         ]
                 else:
-                    # যদি ওয়াটারমার্ক না থাকে
+                    # যদি শুধু থাম্বনেইল থাকে, কোনো পেজের নাম না থাকে
                     if uploaded_image is not None:
                         command = [
                             ffmpeg_exe, '-y',
                             '-i', input_video_path,
                             '-i', input_image_path,
-                            '-filter_complex', f"[0:v]{video_filters}[v];[0:a]{audio_filters}[a]",
+                            '-filter_complex', 
+                            f"[0:v]{video_filters}[vbase];"
+                            f"[1:v]scale=1920:1080[thumb];"
+                            f"[vbase][thumb]overlay=enable='lte(t,5)':shortest=0[v];[0:a]{audio_filters}[a]",
                             '-map', '[v]', '-map', '[a]',
                             '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
                             '-c:a', 'aac', '-b:a', '192k',
@@ -167,7 +147,7 @@ if uploaded_video is not None:
                 result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                 
                 if os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
-                    st.success("🎉 আলহামদুলিল্লাহ ভাই! এবার ভিডিও মোশন, সোজা লেখা এবং পেজের নাম—সব একসাথে পারফেক্ট হয়েছে।")
+                    st.success("🎉 আলহামদুলিল্লাহ ভাই! এবার ভিডিও মোশন, থাম্বনেইল এবং পেজের নাম—সব একসাথে ১০০% পারফেক্ট হয়েছে।")
                     st.subheader("📺 ভিডিও প্রিভিউ:")
                     
                     with open(output_video_path, "rb") as video_file:
@@ -175,9 +155,9 @@ if uploaded_video is not None:
                         
                     with open(output_video_path, "rb") as file:
                         st.download_button(
-                            label="⬇️ গ্যালারিতে সেভ করুন (Download Branded Video)",
+                            label="⬇️ গ্যালারিতে সেভ করুন (Download Full Branded Video)",
                             data=file,
-                            file_name="branded_copyright_free_video.mp4",
+                            file_name="final_branded_copyright_free_video.mp4",
                             mime="video/mp4"
                         )
                 else:
