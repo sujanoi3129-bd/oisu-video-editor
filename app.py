@@ -10,7 +10,7 @@ st._config.set_option("server.maxUploadSize", 2000)
 st.set_page_config(page_title="Smart Video Editor Pro", page_icon="🎬", layout="centered")
 
 st.title("🎬 Anti-Copyright Master Video Engine")
-st.write("সুজন ভাই, এখন স্লাইডার নাড়ালেই চোখের সামনে লাইভ দেখতে পাবেন লেখা কোথায় যাচ্ছে!")
+st.write("সুজন ভাই, এখন ফন্ট সাইজ বড়-ছোট হবে এবং পেছনের কালো ছায়াও লেখার মাপে নিখুঁতভাবে বসবে!")
 
 # অস্থায়ী ফাইল ট্র্যাকিং পাথসমূহ
 v_start = "temp_0_input.mp4"
@@ -145,22 +145,20 @@ elif st.session_state.step == 2:
                 if os.path.exists(v_step1): os.remove(v_step1)
 
 # ==========================================
-# 🟢 🎬 🎯 📸 ধাপ ৩: লাইভ প্রিভিউ সহ টেক্সট পজিশন কন্ট্রোল
+# 🟢 🎬 🎯 💥  ধাপ ৩: ফন্ট ও ব্যাকগ্রাউন্ড একসাথে বড়/ছোট হওয়ার চূড়ান্ত ফিক্স
 # ==========================================
 elif st.session_state.step == 3:
     st.header("Step ৩: লাইভ প্রিভিউ দেখে সাইজ ও পজিশন মেলান")
-    st.write("নিচের স্লাইডারগুলো নাড়ালে ছবিতে লাইভ দেখতে পাবেন নাম কোথায় বসছে।")
+    st.write("নিচের স্লাইডারগুলো নাড়ালে এখন আসল ফন্ট বড়-ছোট হবে এবং কালো বক্সটিও লেখার সাথে ফিট থাকবে।")
     
     if st.session_state.video_data is not None:
         save_bytes_to_file(st.session_state.video_data, v_step2)
         ffmpeg_exe = im_ffmpeg.get_ffmpeg_exe()
         
-        # ভিডিওর প্রথম ফ্রেম থেকে একটি ইমেজ প্রিভিউ তৈরি (যদি না থেকে থাকে)
         if not os.path.exists(preview_img_path):
             extract_cmd = [ffmpeg_exe, '-y', '-i', v_step2, '-ss', '00:00:01', '-vframes', '1', preview_img_path]
             subprocess.run(extract_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             
-        # ভিডিওর আসল সাইজ বের করা
         v_w, v_h = 1280, 720
         probe_cmd = [ffmpeg_exe, '-i', v_step2]
         probe_result = subprocess.run(probe_cmd, stderr=subprocess.PIPE, text=True)
@@ -178,31 +176,42 @@ elif st.session_state.step == 3:
 
         page_name = st.text_input("আপনার পেজের নাম এখানে লিখুন:", value="ToonFlix")
         
-        # স্লাইডার কন্ট্রোল প্যানেল
         st.markdown("### 🎛️ এডজাস্টমেন্ট টুলস:")
-        font_size = st.slider("📐 লেখার সাইজ (Font Size):", min_value=15, max_value=120, value=45, step=2)
+        # 🎯 ফন্ট সাইজের স্লাইডার (যা এখন সরাসরি টেক্সটকে বড় করবে)
+        font_size = st.slider("📐 লেখার সাইজ বড়/ছোট করুন (Font Size):", min_value=10, max_value=100, value=40, step=2)
         pos_x = st.slider("⬅️ ডানে-বামে সরান (X Position):", min_value=0, max_value=v_w, value=int(v_w * 0.75))
         pos_y = st.slider("⬇️ ওপরে-নিচে সরান (Y Position):", min_value=0, max_value=v_h, value=40)
         
-        # 📸 লাইভ প্রিভিউ জেনারেশন (১ সেকেন্ডের মধ্যে কাজ করবে)
         if os.path.exists(preview_img_path) and page_name:
             base_image = Image.open(preview_img_path).convert("RGBA")
-            # ভিডিও রেশিও মেইনটেইন করার জন্য ক্যানভাস রিসাইজ
             base_image = base_image.resize((v_w, v_h))
             
+            # 🎯 ম্যাজিক লজিক: ফন্টকে ডাইনামিক স্কেলে বড় করার জন্য আলাদা ক্যানভাস টেকনিক
+            # এটি ডিফল্ট ফন্ট ছোট থাকার সমস্যাটি ১০০% ফিক্স করে দেবে
+            font_scale_factor = font_size / 10.0
+            
+            # টেক্সটের সঠিক দৈর্ঘ্য ও উচ্চতা নির্ণয়
+            t_w_calc = int(len(page_name) * 6 * font_scale_factor)
+            t_h_calc = int(8 * font_scale_factor)
+            
+            # নিখুঁত কালো ছায়া বা বক্স এরিয়া (লেখা যতটুকু, বক্স ঠিক ততটুকুই)
+            bx1, by1 = pos_x - 12, pos_y - 8
+            bx2, by2 = pos_x + t_w_calc + 12, pos_y + t_h_calc + 8
+            
+            # ১. প্রথমে ব্যাকগ্রাউন্ডে সুন্দর রাউন্ডেড কালো ছায়া আঁকা
             draw = ImageDraw.Draw(base_image)
-            font = ImageFont.load_default()
+            draw.rounded_rectangle([bx1, by1, bx2, by2], radius=int(4 * font_scale_factor), fill=(0, 0, 0, 195))
             
-            text_w = int(len(page_name) * (font_size * 0.60))
-            text_h = int(font_size * 1.3)
+            # ২. লেখাটিকে বড় সাইজে রেন্ডার করে মেইন ইমেজে পেস্ট করা (ডাইনামিক পিক্সেল স্কেলিং)
+            text_canvas = Image.new('RGBA', (len(page_name)*6, 10), (0, 0, 0, 0))
+            text_draw = ImageDraw.Draw(text_canvas)
+            text_draw.text((0, 0), page_name, fill=(255, 255, 255, 255))
             
-            bx1, by1 = pos_x - 15, pos_y - 8
-            bx2, by2 = pos_x + text_w + 15, pos_y + text_h + 4
+            # স্লাইডারের মান অনুযায়ী টেক্সট ইমেজটিকে বড় করা হলো
+            scaled_text = text_canvas.resize((t_w_calc, t_h_calc), Image.Resampling.NEAREST)
             
-            # ছবিতে কালো রাউন্ড বক্স ও লেখা আঁকা
-            draw.rounded_rectangle([bx1, by1, bx2, by2], radius=10, fill=(0, 0, 0, 190))
-            for offset in [(0,0), (1,0), (2,0), (0,1), (1,1), (2,1), (0,2), (1,2)]:
-                draw.text((pos_x + offset[0], pos_y + offset[1]), page_name, fill=(255, 255, 255, 255), font=font)
+            # মূল ইমেজে বড় করা ফন্টটি বসানো
+            base_image.alpha_composite(scaled_text, dest=(pos_x, pos_y))
             
             st.markdown("#### 📺 লাইভ স্ক্রিন প্রিভিউ:")
             st.image(base_image, use_container_width=True)
@@ -210,14 +219,18 @@ elif st.session_state.step == 3:
         if st.button("🎬 ৪. এই পজিশন চূড়ান্ত করে ভিডিও তৈরি করুন"):
             with st.spinner("পুরো ভিডিওতে নাম নিখুঁতভাবে বসানো হচ্ছে..."):
                 try:
-                    # এফএফএমপ্যাগ এর জন্য একই মাপে ট্রান্সপারেন্ট ওয়াটারমার্ক পিএনজি তৈরি
+                    # ফাইনাল ভিডিওর জন্য একই ট্রান্সপারেন্ট ওয়াটারমার্ক পিএনজি তৈরি
                     w_img = Image.new('RGBA', (v_w, v_h), (255, 255, 255, 0))
-                    w_draw = ImageDraw.Draw(w_img)
                     
-                    w_draw.rounded_rectangle([bx1, by1, bx2, by2], radius=10, fill=(0, 0, 0, 190))
-                    for offset in [(0,0), (1,0), (2,0), (0,1), (1,1), (2,1), (0,2), (1,2)]:
-                        w_draw.text((pos_x + offset[0], pos_y + offset[1]), page_name, fill=(255, 255, 255, 255), font=font)
-                        
+                    w_draw = ImageDraw.Draw(w_img)
+                    w_draw.rounded_rectangle([bx1, by1, bx2, by2], radius=int(4 * font_scale_factor), fill=(0, 0, 0, 195))
+                    
+                    text_canvas_final = Image.new('RGBA', (len(page_name)*6, 10), (0, 0, 0, 0))
+                    text_draw_final = ImageDraw.Draw(text_canvas_final)
+                    text_draw_final.text((0, 0), page_name, fill=(255, 255, 255, 255))
+                    
+                    scaled_text_final = text_canvas_final.resize((t_w_calc, t_h_calc), Image.Resampling.NEAREST)
+                    w_img.alpha_composite(scaled_text_final, dest=(pos_x, pos_y))
                     w_img.save(watermark_path)
                     
                     cmd = [
