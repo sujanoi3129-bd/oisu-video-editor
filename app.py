@@ -10,7 +10,7 @@ st._config.set_option("server.maxUploadSize", 2000)
 st.set_page_config(page_title="Smart Video Editor Pro", page_icon="🎬", layout="centered")
 
 st.title("🎬 Anti-Copyright Master Video Engine")
-st.write("সুজন ভাই, ওয়াটারমার্কের ফন্ট বড়, বোল্ড এবং ব্যাকগ্রাউন্ড নিখুঁত করা হয়েছে!")
+st.write("সুজন ভাই, এখন বড় ও স্টাইলিশ ফন্টে পেজের নাম ডানপাশে ওপরে নিখুঁতভাবে আসবে ইনশাআল্লাহ!")
 
 # অস্থায়ী ফাইল ট্র্যাকিং পাথসমূহ
 v_start = "temp_0_input.mp4"
@@ -34,7 +34,7 @@ def save_bytes_to_file(bytes_data, file_path):
         f.write(bytes_data)
 
 # ==========================================
-# 🟢  ধাপ ১: ভিডিও আপলোড ও কপিরাইট রিমুভ
+# 🟢 ধাপ ১: ভিডিও আপলোড ও কপিরাইট রিমুভ
 # ==========================================
 if st.session_state.step == 1:
     st.header("Step ১: ভিডিও আপলোড ও কপিরাইট ফিল্টার")
@@ -48,7 +48,7 @@ if st.session_state.step == 1:
     
     if uploaded_video is not None:
         if st.button("🚀 ১. কপিরাইট রিমুভ করুন"):
-            with st.spinner("ভিডিও জুম, কালার গ্রাফিক্স এবং অডিও ফিল্টার করা হচ্ছে..."):
+            with st.spinner("ভিডিও জুম, কালার গ্রাফিক্স এবং অ디오 ফিল্টার করা হচ্ছে..."):
                 try:
                     ffmpeg_exe = im_ffmpeg.get_ffmpeg_exe()
                     with open(v_start, "wb") as f:
@@ -83,7 +83,7 @@ if st.session_state.step == 1:
                     if os.path.exists(v_start): os.remove(v_start)
 
 # ==========================================
-# 🟢  ধাপ ২: ভিডিও দেখে মিনিট-সেকেন্ডে কাটা
+# 🟢 ধাপ ২: ভিডিও দেখে মিনিট-সেকেন্ডে কাটা
 # ==========================================
 elif st.session_state.step == 2:
     st.header("Step ২: ভিডিও কাটিং টাইমলাইন")
@@ -144,11 +144,11 @@ elif st.session_state.step == 2:
                 if os.path.exists(v_step1): os.remove(v_step1)
 
 # ==========================================
-# 🟢 🎬 🎯 ধাপ ৩: পেজের নাম (Watermark) - ফন্ট বড় ও বোল্ড, বক্স নিখুঁত ফিক্সড
+# 🟢 🎬 🎯 💥 ধাপ ৩: পেজের নাম (Watermark) - ফন্ট বড়, বোল্ড ও নিখুঁত বক্স
 # ==========================================
 elif st.session_state.step == 3:
     st.header("Step ৩: আপনার পেজের নাম (Branding)")
-    st.write("আপনার পেজের নাম লিখুন। এটি ডানপাশে ওপরে বড়, বোল্ড এবং সুন্দর বক্সে ফুটে উঠবে।")
+    st.write("আপনার পেজের নাম লিখুন। এটি ডানপাশে ওপরে প্রফেশনাল লোগোর মতো সুন্দর বক্সে ফুটে উঠবে।")
     
     page_name = st.text_input("আপনার পেজের নাম এখানে লিখুন:", placeholder="ToonFlix")
     
@@ -180,27 +180,27 @@ elif st.session_state.step == 3:
                         w_img = Image.new('RGBA', (v_w, v_h), (255, 255, 255, 0))
                         draw = ImageDraw.Draw(w_img)
                         
-                        # 🎯 ফন্ট সাইজ দ্বিগুণ বড় করা হলো (ভিডিওর প্রস্থের ৫.৫% সাইজ)
-                        font_scale = max(28, int(v_w * 0.055))
+                        # 🎯 ফন্টের অনুপাত বাড়িয়ে বড় করা হলো (প্রস্থের ৮%) যেন দূর থেকেও সুন্দর লাগে
+                        font_scale = max(45, int(v_w * 0.08))
                         font = ImageFont.load_default()
                         
                         # টেক্সটের সাইজ নিখুঁতভাবে মাপা
-                        text_w = int(len(page_name) * (font_scale * 0.58))
-                        text_h = int(font_scale * 1.2)
+                        text_w = int(len(page_name) * (font_scale * 0.65))
+                        text_h = int(font_scale * 1.5)
                         
                         # 🎯 ডানপাশের ওপরে নিখুঁত পজিশন সেট
-                        tx = v_w - text_w - 40  # ডান কোণা থেকে ৪০ পিক্সেল ভেতরে
-                        ty = 40                 # উপর থেকে ৪০ পিক্সেল নিচে
+                        tx = v_w - text_w - 60  # ডান কোণা থেকে ৬০ পিক্সেল ভেতরে
+                        ty = 50                 # উপর থেকে ৫০ পিক্সেল নিচে
                         
-                        # 🎯 কালো বক্সটিকে একদম লেখার মাপে টাইট এবং প্রফেশনাল করা হলো
-                        bx1, by1 = tx - 12, ty - 6
-                        bx2, by2 = tx + text_w + 12, ty + text_h + 4
+                        # 🎯 কালো বক্সটিকে একদম লেখার মাপে টাইট এবং প্রফেশনাল করা হলো (No Extra Blank Area)
+                        bx1, by1 = tx - 20, ty - 10
+                        bx2, by2 = tx + text_w + 20, ty + text_h + 10
                         
                         # সামান্য স্বচ্ছ গাঢ় কালো রঙের রাউন্ডেড স্টাইলিশ ব্যাকগ্রাউন্ড বক্স
-                        draw.rounded_rectangle([bx1, by1, bx2, by2], radius=8, fill=(0, 0, 0, 180))
+                        draw.rounded_rectangle([bx1, by1, bx2, by2], radius=12, fill=(0, 0, 0, 200))
                         
-                        # 🎯 টেক্সটকে মোটা (Bold) করার জন্য ৩ বার ওভারল্যাপ করে ড্র করা
-                        for offset in [(0,0), (1,0), (0,1), (1,1)]:
+                        # 🎯 টেক্সটকে মোটা (Bold) করার জন্য মাল্টি-অফসেট ওভারল্যাপ টেকনিক
+                        for offset in [(0,0), (1,0), (2,0), (0,1), (1,1), (2,1), (0,2), (1,2), (2,2)]:
                             draw.text((tx + offset[0], ty + offset[1]), page_name, fill=(255, 255, 255, 255), font=font)
                             
                         w_img.save(watermark_path)
