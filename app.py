@@ -4,14 +4,18 @@ import os
 import imageio_ffmpeg as im_ffmpeg
 import struct
 
+# বড় ফাইল আপলোডের জন্য সাইজ লিমিট ২০০০ MB বা ২ GB করা হলো (সবার উপরে থাকতে হবে)
+st._config.set_option("server.maxUploadSize", 2000)
+
 st.set_page_config(page_title="Video Copyright Remover", page_icon="🎬", layout="centered")
 
 st.title("🎬 Smart Video Copyright Remover")
 st.write("ভিডিও আপলোড করুন। আপনার ভিডিও যতটুকু লম্বা, কাটিং সিস্টেম ঠিক ততটুকুই দেখাবে।")
 
-uploaded_file = st.file_uploader("১. গ্যালারি থেকে মূল ভিডিও সিলেক্ট করুন (MP4)", type=["mp4"])
+# এখন এখানে ২০০ MB এর পরিবর্তে ২০00 MB বা ২ GB পর্যন্ত বড় ভিডিও আপলোড করতে পারবেন
+uploaded_file = st.file_uploader("১. গ্যালারি থেকে মূল ভিডিও সিলেক্ট করুন (সর্বোচ্চ ২ GB)", type=["mp4"])
 
-# এমপি৪ ফাইলের হেডার থেকে নিখুঁতভাবে দৈর্ঘ্য (Duration) বের করার পাইথন লজিক
+# এমপি৪ ফাইলের হেডার থেকে দৈর্ঘ্য বের করার লজিক
 def get_mp4_duration(file_stream):
     try:
         file_stream.seek(0)
@@ -30,13 +34,12 @@ def get_mp4_duration(file_stream):
                 return round(duration / timescale, 2)
     except:
         pass
-    return 10.50  # ব্যাকআপ ডিফল্ট টাইম
+    return 10.50
 
 if uploaded_file is not None:
     input_path = "temp_input.mp4"
     output_path = "my_branded_video.mp4"
     
-    # ভিডিওর আসল দৈর্ঘ্য নিজে থেকে বের হবে
     video_duration = get_mp4_duration(uploaded_file)
     
     with open(input_path, "wb") as f:
@@ -45,7 +48,6 @@ if uploaded_file is not None:
     st.success("✅ মূল ভিডিও আপলোড সফল হয়েছে!")
     st.markdown("---")
     
-    # --- ভিডিও প্লেয়ার প্রিভিউ ---
     st.markdown("### 📺 ভিডিও প্রিভিউ:")
     with open(input_path, "rb") as video_file:
         video_bytes = video_file.read()
@@ -54,7 +56,6 @@ if uploaded_file is not None:
     st.markdown("---")
     st.markdown(f"### ✂️ ভিডিও কাটার টাইমলাইন (ভিডিওর আসল সাইজ: `{video_duration}` সেকেন্ড)")
     
-    # ভিডিওর আসল দৈর্ঘ্য অনুযায়ী অটোমেটিক স্লাইডার রেঞ্জ লক হবে
     time_range = st.slider(
         "ভিডিওর কাটিং পয়েন্ট সিলেক্ট করুন (টেনে ছোট-বড় করুন):",
         min_value=0.0,
@@ -81,13 +82,12 @@ if uploaded_file is not None:
                     
                     ffmpeg_exe = im_ffmpeg.get_ffmpeg_exe()
                     
-                    # কোনো জটিল টেক্সট বা লোগো ছাড়া একদম নিরাপদ কপিরাইট রিমুভার বেস ফিল্টার
-                    vf_filter = "crop=iw-10:ih-10:5:5,eq=brightness=0.03:contrast=1.03"
+                    # ক্রপ ফিল্টার বাড়িয়ে ৪০ পিক্সেল করা হয়েছে এবং কালার সামান্য পরিবর্তন করা হয়েছে
+                    vf_filter = "crop=iw-40:ih-40:20:20,eq=brightness=0.04:contrast=1.04:saturation=1.05"
                     
-                    # অডিওর ফিল্টার (স্পিড সামান্য পরিবর্তন)
-                    af_filter = "asetrate=44100*1.03,atempo=1.02"
+                    # অডিওর ফিল্টার পরিবর্তন করে স্পিড ও টোন আরেকটু বাড়ানো হলো যাতে কপিরাইট ফ্রি হয়
+                    af_filter = "asetrate=44100*1.05,atempo=1.02"
                     
-                    # ১০০% স্ট্যান্ডার্ড এবং নিরাপদ FFmpeg কম্যান্ড ফরম্যাট
                     command = [
                         ffmpeg_exe, '-y',
                         '-i', input_path,
@@ -97,7 +97,7 @@ if uploaded_file is not None:
                         '-af', af_filter,
                         '-c:v', 'libx264',
                         '-preset', 'veryfast',
-                        '-crf', '23',
+                        '-crf', '22',
                         '-c:a', 'aac',
                         output_path
                     ]
@@ -118,7 +118,6 @@ if uploaded_file is not None:
                         st.error("❌ প্রসেসিং সম্পূর্ণ করা যায়নি। নিচে এরর ডিটেইলস দেওয়া হলো:")
                         st.code(result.stderr)
                     
-                    # সাময়িক ফাইল মুছে ফেলা
                     if os.path.exists(input_path): os.remove(input_path)
                     
                 except Exception as e:
