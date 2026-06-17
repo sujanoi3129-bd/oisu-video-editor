@@ -2,6 +2,7 @@ import streamlit as st
 import subprocess
 import os
 import re
+import urllib.request
 import imageio_ffmpeg as im_ffmpeg
 from PIL import Image, ImageDraw, ImageFont
 
@@ -10,8 +11,21 @@ st._config.set_option("server.maxUploadSize", 2000)
 
 st.set_page_config(page_title="Smart Video Editor Pro", page_icon="🎬", layout="centered")
 
-st.title("🎬 Anti-Copyright Master Video Engine (Perfect Font Pro)")
-st.write("সুজন ভাই, এবার ইংরেজি লেখা এবং কালো বক্স দুটোই একসাথে ১০০% সুন্দরভাবে ছোট-বড় হবে!")
+st.title("🎬 Anti-Copyright Master Video Engine (Clear Font Pro)")
+st.write("সুজন ভাই, এবার ইংরেজি লেখা একদম স্পষ্ট হবে এবং কালো বক্স চারদিকে সমান থাকবে!")
+
+# ফন্ট ডাউনলোডের ব্যবস্থা (সুন্দর ও স্পষ্ট ইংরেজি ফন্টের জন্য)
+font_url = "https://github.com/google/fonts/raw/main/apache/roboto/Roboto-Bold.ttf"
+local_font_path = "Roboto-Bold.ttf"
+
+@st.cache_resource
+def download_perfect_font():
+    if not os.path.exists(local_font_path):
+        try:
+            urllib.request.urlretrieve(font_url, local_font_path)
+        except:
+            pass
+download_perfect_font()
 
 # अस्थायी ফাইল ট্র্যাকিং পাথসমূহ
 v_start = "temp_0_input.mp4"
@@ -218,8 +232,7 @@ elif st.session_state.step == 3:
         page_name = st.text_input("আপনার পেজের নাম এখানে লিখুন (ইংরেজিতে):", value="ToonFlix")
         
         st.markdown("### 🎛️ টেক্সট কাস্টমাইজেশন প্যানেল:")
-        # সুজন ভাই, এই স্লাইডারটি এখন লেখা এবং কালো বক্স দুটোকেই চমৎকারভাবে একসাথে বড়-ছোট করবে
-        font_size = st.slider("📐 লেখার সাইজ বড়/ছোট করুন (Font Size):", min_value=15, max_value=100, value=40, step=1)
+        font_size = st.slider("📐 লেখার সাইজ বড়/ছোট করুন (Font Size):", min_value=15, max_value=120, value=35, step=1)
         pos_x = st.slider("⬅️ ডানে-বামে সরান (X Position):", min_value=0, max_value=v_w, value=int(v_w * 0.80))
         pos_y = st.slider("⬇️ ওপরে-নিচে সরান (Y Position):", min_value=0, max_value=v_h, value=40)
         
@@ -227,48 +240,41 @@ elif st.session_state.step == 3:
             base_image = Image.open(preview_img_path).convert("RGBA")
             base_image = base_image.resize((v_w, v_h))
             
-            # 🔥 মাস্টার ভেক্টর রিসাইজ ইঞ্জিন: কোনো এক্সটার্নাল ফন্ট ফাইল ছাড়াই 
-            # ইংরেজি টেক্সটকে একদম হাই-কোয়ালিটি প্রিমিয়াম ফন্টের লুকে নিখুঁতভাবে ছোট-বড় করবে।
-            base_font = ImageFont.load_default()
+            # ডাউনলোড করা স্পষ্ট ফন্ট লোড করা হচ্ছে
+            if os.path.exists(local_font_path):
+                font = ImageFont.truetype(local_font_path, font_size)
+            else:
+                font = ImageFont.load_default()
             
-            # একটি হাই-রেজোলিউশন ক্যানভাসে টেক্সট ড্র করে সেটিকে স্মুথলি স্কেল করার আধুনিক টেকনিক
-            char_w, char_h = 6, 11
-            tw_base = char_w * len(page_name)
-            th_base = char_h
-            
-            # হাই-রেজোলিউশন টেম্পোরারি টেক্সট ইমেজ
-            text_canvas = Image.new('RGBA', (tw_base + 4, th_base + 4), (0, 0, 0, 0))
-            td = ImageDraw.Draw(text_canvas)
-            
-            # ডাবল ড্র করে ফন্টটিকে প্রফেশনাল বোল্ড করা হচ্ছে
-            td.text((1, 1), page_name, fill=(255, 255, 255, 255), font=base_font)
-            td.text((2, 1), page_name, fill=(255, 255, 255, 255), font=base_font)
-            
-            # সুজন ভাই, আপনার স্লাইডারের ফন্ট সাইজ অনুযায়ী লেখার আসল দৈর্ঘ্য ও উচ্চতা এখানে নিখুঁতভাবে গুণ হচ্ছে
-            scale_factor = font_size / 11.0
-            tw_final = int(tw_base * scale_factor)
-            th_final = int(th_base * scale_factor)
-            
-            # লেখাটিকে ফাটানো ছাড়া চমৎকার মসৃণভাবে বড় করা হচ্ছে
-            scaled_text = text_canvas.resize((tw_final, th_final), Image.Resampling.BILINEAR)
+            # ফন্টের নিখুঁত সাইজ মেপে নেওয়া (যেন ডানপাশে অতিরিক্ত বড় না হয়)
+            if hasattr(font, 'getbbox'):
+                bbox = font.getbbox(page_name)
+                tw = bbox[2] - bbox[0]
+                th = bbox[3] - bbox[1]
+            else:
+                try:
+                    tw, th = font.getsize(page_name)
+                except:
+                    tw, th = len(page_name) * (font_size * 0.6), font_size
             
             # মেইন ওয়াটারমার্ক ক্যানভাস তৈরি
             watermark_img = Image.new('RGBA', (v_w, v_h), (0, 0, 0, 0))
             w_draw = ImageDraw.Draw(watermark_img)
             
-            # লেখার নতুন বড় সাইজ অনুযায়ী কালো বক্সের মার্জিন সেট
-            pad_x = int(font_size * 0.4)
+            # চারদিকের মার্জিন (Padding) একদম সমান পিক্সেল মাপে ফিক্স করা হলো
+            pad_x = int(font_size * 0.35)
             pad_y = int(font_size * 0.2)
+            
             bx1 = pos_x - pad_x
             by1 = pos_y - pad_y
-            bx2 = pos_x + tw_final + pad_x
-            by2 = pos_y + th_final + pad_y
+            bx2 = pos_x + tw + pad_x
+            by2 = pos_y + th + pad_y + int(font_size * 0.1) # সামান্য নিচের মার্জিন ব্যালেন্স
             
-            # কালো স্বচ্ছ ব্যাকগ্রাউন্ড বক্স আঁকা (যা লেখার সাথে সাথে সমানভাবে বড়-ছোট হবে)
-            w_draw.rounded_rectangle([bx1, by1, bx2, by2], radius=8, fill=(0, 0, 0, 170))
+            # কালো স্বচ্ছ ব্যাকগ্রাউন্ড বক্স আঁকা (ডানপাশে আর বাড়তি বড় হবে না)
+            w_draw.rounded_rectangle([bx1, by1, bx2, by2], radius=6, fill=(0, 0, 0, 160))
             
-            # বড় হওয়া সুন্দর সাদা লেখাটি কালো বক্সের ঠিক উপরে বসিয়ে দেওয়া হলো
-            watermark_img.alpha_composite(scaled_text, dest=(pos_x, pos_y))
+            # একদম স্পষ্ট ও ক্রিস্টাল ক্লিয়ার সাদা টেক্সট ড্র করা হচ্ছে
+            w_draw.text((pos_x, pos_y), page_name, fill=(255, 255, 255, 255), font=font)
             
             st.markdown("#### 📺 লাইভ স্ক্রিন প্রিভিউ:")
             base_image.alpha_composite(watermark_img)
