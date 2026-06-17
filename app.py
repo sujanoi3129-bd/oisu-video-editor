@@ -10,10 +10,10 @@ st._config.set_option("server.maxUploadSize", 2000)
 
 st.set_page_config(page_title="Smart Video Editor Pro", page_icon="🎬", layout="centered")
 
-st.title("🎬 Anti-Copyright Master Video Engine (No-Error Version)")
-st.write("সুজন ভাই, এই কোডে কোনো এরর আসবে না। লেখা এবং কালো বক্স একসাথে সুন্দরভাবে কাজ করবে!")
+st.title("🎬 Anti-Copyright Master Video Engine (Step-Fix Version)")
+st.write("সুজন ভাই, এই কোডটিতে ১০০% হওয়ার পর অটোমেটিক পরবর্তী ধাপে চলে যাবে ইনশাল্লাহ।")
 
-# अस्थायी ফাইল ট্র্যাকিং পাথসমূহ
+# অস্থায়ী ফাইল ট্র্যাকিং পাথসমূহ
 v_start = "temp_0_input.mp4"
 v_step1 = "temp_1_copyright_free.mp4"
 v_step2 = "temp_2_cropped.mp4"
@@ -35,10 +35,12 @@ def save_bytes_to_file(bytes_data, file_path):
     with open(file_path, "wb") as f:
         f.write(bytes_data)
 
-# এফএফএমপ্যাগ প্রসেসিং লাইভ ট্র্যাক করার ফাংশน
+# এফএফএমপ্যাগ প্রসেসিং লাইভ ট্র্যাক করার ফাংশন
 def run_ffmpeg_with_progress(cmd, status_text_display):
     progress_bar = st.progress(0)
     total_duration = 1.0
+    
+    # ইনপুট ফাইলের মোট ডিউরেশন বের করার চেষ্টা
     for arg in cmd:
         if "temp_" in arg and os.path.exists(arg):
             try:
@@ -70,6 +72,7 @@ def run_ffmpeg_with_progress(cmd, status_text_display):
             status_text_display.markdown(f"⏳ প্রসেসিং হচ্ছে: **{percent}%** সম্পন্ন")
             
     process.wait()
+    progress_bar.progress(1.0) # প্রোগ্রেস বার ফুল করা হলো
     progress_bar.empty()
 
 # ==========================================
@@ -91,6 +94,11 @@ if st.session_state.step == 1:
             status_text.markdown("🎬 ভিডিও কনভার্ট শুরু হচ্ছে...")
             try:
                 ffmpeg_exe = im_ffmpeg.get_ffmpeg_exe()
+                
+                # আগের কোনো পুরনো আবর্জনা ফাইল থাকলে তা ডিলিট করা
+                for f in [v_start, v_step1, v_step2, v_step3, v_final]:
+                    if os.path.exists(f): os.remove(f)
+                    
                 with open(v_start, "wb") as f:
                     f.write(uploaded_video.read())
                     
@@ -112,12 +120,18 @@ if st.session_state.step == 1:
                 
                 run_ffmpeg_with_progress(cmd, status_text)
                 
+                # 🎯 সবচেয়ে গুরুত্বপূর্ণ ফিক্স: ফাইল সঠিকভাবে তৈরি হয়েছে কিনা তা চেক করা
                 if os.path.exists(v_step1) and os.path.getsize(v_step1) > 0:
                     with open(v_step1, "rb") as f:
                         st.session_state.video_data = f.read()
-                    st.success("✅  ধাপ ১ সফল! কপিরাইট মুক্ত করা সম্পন্ন হয়েছে।")
+                    
+                    # সেশন ডাইরেক্ট আপডেট করা হলো যেন লুপে না আটকে
                     st.session_state.step = 2
+                    status_text.success("✅ ধাপ ১ সফল! পরবর্তী ধাপে যাওয়া হচ্ছে...")
                     st.rerun()
+                else:
+                    st.error("❌ ভিডিও প্রসেস সম্পূর্ণ হয়নি। দয়া করে আবার চেষ্টা করুন।")
+                    
             except Exception as e:
                 st.error(f"এরর: {str(e)}")
             finally:
@@ -181,13 +195,12 @@ elif st.session_state.step == 2:
             
             if os.path.exists(v_step2) and os.path.getsize(v_step2) > 0:
                 with open(v_step2, "rb") as f: st.session_state.video_data = f.read()
-                st.success("✅  ধাপ ২ সফল!")
                 st.session_state.step = 3
                 st.rerun()
             if os.path.exists(v_step1): os.remove(v_step1)
 
 # ==========================================
-# 🟢  ধাপ ৩: হাই-কোয়ালিটি ব্র্যান্ডিং ও সাইজ ফিক্স
+# 🟢  ধাপ ৩: লাইভ প্রিভিউ ও লগো ফিক্স
 # ==========================================
 elif st.session_state.step == 3:
     st.header("Step ৩: লাইভ প্রিভিউ দেখে সাইজ ও পজিশন মেলান")
@@ -218,9 +231,7 @@ elif st.session_state.step == 3:
         page_name = st.text_input("আপনার পেজের নাম এখানে লিখুন (ইংরেজিতে):", value="ToonFlix")
         
         st.markdown("### 🎛️ টেক্সট কাস্টমাইজেশন প্যানেল:")
-        
-        # ফন্ট সাইজ এবং মার্জিন কন্ট্রোল গুণিতক (Multiplier) নিয়মে ফিক্স করা হলো
-        text_scale = st.slider("📐 লেখার সাইজ বড়/ছোট করুন (Size):", min_value=1.0, max_value=5.0, value=2.0, step=0.1)
+        font_size = st.slider("📐 লেখার সাইজ বড়/ছোট করুন (Font Size):", min_value=15, max_value=150, value=40, step=1)
         pos_x = st.slider("⬅️ ডানে-বামে সরান (X Position):", min_value=0, max_value=v_w, value=int(v_w * 0.80))
         pos_y = st.slider("⬇️ ওপরে-নিচে সরান (Y Position):", min_value=0, max_value=v_h, value=40)
         
@@ -228,38 +239,37 @@ elif st.session_state.step == 3:
             base_image = Image.open(preview_img_path).convert("RGBA")
             base_image = base_image.resize((v_w, v_h))
             
-            # সিস্টেম ডিফল্ট ফন্ট লোড
-            font = ImageFont.load_default()
+            base_font = ImageFont.load_default()
+            text_canvas = Image.new('RGBA', (v_w, v_h), (0, 0, 0, 0))
+            text_draw = ImageDraw.Draw(text_canvas)
             
-            # নিখুঁত টেক্সট ইমেজের সাইজ হিসাব (যেখানে লেখা এবং ব্যাকগ্রাউন্ড একসাথে কাজ করবে)
-            char_width = 6
-            char_height = 11
-            tw = int(len(page_name) * char_width * text_scale)
-            th = int(char_height * text_scale)
+            left, top, right, bottom = text_draw.textbbox((0, 0), page_name, font=base_font)
+            orig_w = right - left
+            orig_h = bottom - top
             
-            # মেইন ওয়াটারমার্ক ক্যানভাস
-            watermark_img = Image.new('RGBA', (v_w, v_h), (0, 0, 0, 0))
-            w_draw = ImageDraw.Draw(watermark_img)
+            scale_factor = font_size / 10.0
+            tw = int(orig_w * scale_factor)
+            th = int(orig_h * scale_factor)
             
-            # চারদিকের ডাইনামিক প্যাডিং
-            pad_x = int(5 * text_scale)
-            pad_y = int(4 * text_scale)
+            pad_x = int(6 * scale_factor)
+            pad_y = int(5 * scale_factor)
             
             bx1 = pos_x - pad_x
             by1 = pos_y - pad_y
             bx2 = pos_x + tw + pad_x
             by2 = pos_y + th + pad_y
             
-            # কালো স্বচ্ছ ব্যাকগ্রাউন্ড বক্স আঁকা (ডানপাশে আর বাড়তি বড় হবে না)
-            w_draw.rounded_rectangle([bx1, by1, bx2, by2], radius=4, fill=(0, 0, 0, 160))
+            watermark_img = Image.new('RGBA', (v_w, v_h), (0, 0, 0, 0))
+            w_draw = ImageDraw.Draw(watermark_img)
+            w_draw.rounded_rectangle([bx1, by1, bx2, by2], radius=int(3 * scale_factor), fill=(0, 0, 0, 170))
             
-            # নতুন স্কেলেবল টেক্সট লেয়ার (যা কালো বক্সের সাথে সমানুপাতে বড়-ছোট হবে)
-            txt_layer = Image.new('RGBA', (len(page_name)*char_width, char_height), (0,0,0,0))
+            txt_layer = Image.new('RGBA', (orig_w if orig_w > 0 else 10, orig_h if orig_h > 0 else 10), (0,0,0,0))
             t_draw = ImageDraw.Draw(txt_layer)
-            t_draw.text((0, 0), page_name, fill=(255, 255, 255, 255), font=font)
-            txt_layer = txt_layer.resize((tw, th), Image.Resampling.NEAREST)
+            t_draw.text((0, 0), page_name, fill=(255, 255, 255, 255), font=base_font)
             
-            # ওয়াটারমার্কে পেস্ট করা
+            if orig_w > 0 and orig_h > 0:
+                txt_layer = txt_layer.resize((tw, th), Image.Resampling.LANCZOS)
+                
             watermark_img.paste(txt_layer, (pos_x, pos_y), txt_layer)
             
             st.markdown("#### 📺 লাইভ স্ক্রিন প্রিভিউ:")
@@ -283,7 +293,6 @@ elif st.session_state.step == 3:
                 
                 if os.path.exists(v_step3) and os.path.getsize(v_step3) > 0:
                     with open(v_step3, "rb") as f: st.session_state.video_data = f.read()
-                    st.success("✅ নাম সফলভাবে ভিডিওতে বসে গেছে!")
                     st.session_state.step = 4
                     st.rerun()
             except Exception as e:
