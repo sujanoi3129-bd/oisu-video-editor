@@ -10,7 +10,7 @@ st._config.set_option("server.maxUploadSize", 2000)
 st.set_page_config(page_title="Smart Video Editor Pro", page_icon="🎬", layout="centered")
 
 st.title("🎬 Anti-Copyright Master Video Engine")
-st.write("সুজন ভাই, এখন ফন্ট সাইজ বড়-ছোট হবে এবং পেছনের কালো ছায়াও লেখার মাপে নিখুঁতভাবে বসবে!")
+st.write("সুজন ভাই, এখন কভার ফটো বা থাম্বনেইল দিলেও অডিও-ভিডিওর মিল একদম পারফেক্ট থাকবে!")
 
 # অস্থায়ী ফাইল ট্র্যাকিং পাথসমূহ
 v_start = "temp_0_input.mp4"
@@ -145,7 +145,7 @@ elif st.session_state.step == 2:
                 if os.path.exists(v_step1): os.remove(v_step1)
 
 # ==========================================
-# 🟢 🎬 🎯 💥  ধাপ ৩: ফন্ট ও ব্যাকগ্রাউন্ড একসাথে বড়/ছোট হওয়ার চূড়ান্ত ফিক্স
+# 🟢  ধাপ ৩: লাইভ প্রিভিউ দেখে সাইজ ও পজিশন মেলান
 # ==========================================
 elif st.session_state.step == 3:
     st.header("Step ৩: লাইভ প্রিভিউ দেখে সাইজ ও পজিশন মেলান")
@@ -176,8 +176,7 @@ elif st.session_state.step == 3:
 
         page_name = st.text_input("আপনার পেজের নাম এখানে লিখুন:", value="ToonFlix")
         
-        st.markdown("### 🎛️ এডজাস্টমেন্ট টুলস:")
-        # 🎯 ফন্ট সাইজের স্লাইডার (যা এখন সরাসরি টেক্সটকে বড় করবে)
+        st.markdown("### 🎛️ এডজাস্টমেন্টツール:")
         font_size = st.slider("📐 লেখার সাইজ বড়/ছোট করুন (Font Size):", min_value=10, max_value=100, value=40, step=2)
         pos_x = st.slider("⬅️ ডানে-বামে সরান (X Position):", min_value=0, max_value=v_w, value=int(v_w * 0.75))
         pos_y = st.slider("⬇️ ওপরে-নিচে সরান (Y Position):", min_value=0, max_value=v_h, value=40)
@@ -186,31 +185,21 @@ elif st.session_state.step == 3:
             base_image = Image.open(preview_img_path).convert("RGBA")
             base_image = base_image.resize((v_w, v_h))
             
-            # 🎯 ম্যাজিক লজিক: ফন্টকে ডাইনামিক স্কেলে বড় করার জন্য আলাদা ক্যানভাস টেকনিক
-            # এটি ডিফল্ট ফন্ট ছোট থাকার সমস্যাটি ১০০% ফিক্স করে দেবে
             font_scale_factor = font_size / 10.0
-            
-            # টেক্সটের সঠিক দৈর্ঘ্য ও উচ্চতা নির্ণয়
             t_w_calc = int(len(page_name) * 6 * font_scale_factor)
             t_h_calc = int(8 * font_scale_factor)
             
-            # নিখুঁত কালো ছায়া বা বক্স এরিয়া (লেখা যতটুকু, বক্স ঠিক ততটুকুই)
             bx1, by1 = pos_x - 12, pos_y - 8
             bx2, by2 = pos_x + t_w_calc + 12, pos_y + t_h_calc + 8
             
-            # ১. প্রথমে ব্যাকগ্রাউন্ডে সুন্দর রাউন্ডেড কালো ছায়া আঁকা
             draw = ImageDraw.Draw(base_image)
             draw.rounded_rectangle([bx1, by1, bx2, by2], radius=int(4 * font_scale_factor), fill=(0, 0, 0, 195))
             
-            # ২. লেখাটিকে বড় সাইজে রেন্ডার করে মেইন ইমেজে পেস্ট করা (ডাইনামিক পিক্সেল স্কেলিং)
             text_canvas = Image.new('RGBA', (len(page_name)*6, 10), (0, 0, 0, 0))
             text_draw = ImageDraw.Draw(text_canvas)
             text_draw.text((0, 0), page_name, fill=(255, 255, 255, 255))
             
-            # স্লাইডারের মান অনুযায়ী টেক্সট ইমেজটিকে বড় করা হলো
             scaled_text = text_canvas.resize((t_w_calc, t_h_calc), Image.Resampling.NEAREST)
-            
-            # মূল ইমেজে বড় করা ফন্টটি বসানো
             base_image.alpha_composite(scaled_text, dest=(pos_x, pos_y))
             
             st.markdown("#### 📺 লাইভ স্ক্রিন প্রিভিউ:")
@@ -219,9 +208,7 @@ elif st.session_state.step == 3:
         if st.button("🎬 ৪. এই পজিশন চূড়ান্ত করে ভিডিও তৈরি করুন"):
             with st.spinner("পুরো ভিডিওতে নাম নিখুঁতভাবে বসানো হচ্ছে..."):
                 try:
-                    # ফাইনাল ভিডিওর জন্য একই ট্রান্সপারেন্ট ওয়াটারমার্ক পিএনজি তৈরি
                     w_img = Image.new('RGBA', (v_w, v_h), (255, 255, 255, 0))
-                    
                     w_draw = ImageDraw.Draw(w_img)
                     w_draw.rounded_rectangle([bx1, by1, bx2, by2], radius=int(4 * font_scale_factor), fill=(0, 0, 0, 195))
                     
@@ -254,7 +241,7 @@ elif st.session_state.step == 3:
                     if os.path.exists(preview_img_path): os.remove(preview_img_path)
 
 # ==========================================
-# 🟢   ধাপ ৪: থাম্বনেইল সেট এবং ফাইনাল ডাউনলোড
+# 🟢 🎬 🎯 📸  ধাপ ৪: নিখুঁত অডিও-সিঙ্ক থাম্বনেইল ফিক্স
 # ==========================================
 elif st.session_state.step == 4:
     st.header("Step ৪: কাস্টম থাম্বনেইল ও ফাইনাল ডাউনলোড")
@@ -266,13 +253,19 @@ elif st.session_state.step == 4:
             ffmpeg_exe = im_ffmpeg.get_ffmpeg_exe()
             
             if uploaded_image is not None:
-                with open("temp_thumb.jpg", "wb") as f: f.write(uploaded_image.read())
-                with st.spinner("থাম্বনেইল ইমেজ সেট করা হচ্ছে..."):
+                with open("temp_thumb.jpg", "wb") as f: 
+                    f.write(uploaded_image.read())
+                    
+                with st.spinner("থাম্বনেইল সেট করা হচ্ছে এবং অডিও সিঙ্ক ঠিক করা হচ্ছে..."):
+                    # 🎯 ম্যাজিক এফএফএমপ্যাগ লজিক: অডিওকে ঠিক ৫ সেকেন্ডের জন্য ডিলে (Delay) করা হলো
+                    # যাতে কভার ফটো চলার সময় অডিও ব্যাকগ্রাউন্ডে আগে আগে বেজে নষ্ট না হয়।
                     cmd = [
                         ffmpeg_exe, '-y', '-i', v_step3, '-i', "temp_thumb.jpg",
-                        '-filter_complex', '[1:v]scale=iw:ih[t];[0:v][t]overlay=enable=\'lte(t,5)\':shortest=0[v]',
-                        '-map', '[v]', '-map', '0:a',
-                        '-c:v', 'libx264', '-crf', '20', '-c:a', 'copy', v_final
+                        '-filter_complex', 
+                        '[1:v]scale=iw:ih[t];[0:v][t]overlay=enable=\'lte(t,5)\':shortest=0[v];'
+                        '[0:a]adelay=5000|5000[a]',
+                        '-map', '[v]', '-map', '[a]',
+                        '-c:v', 'libx264', '-crf', '20', '-c:a', 'aac', v_final
                     ]
                     subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 if os.path.exists("temp_thumb.jpg"): os.remove("temp_thumb.jpg")
@@ -280,7 +273,7 @@ elif st.session_state.step == 4:
                 os.rename(v_step3, v_final)
                 
             if os.path.exists(v_final) and os.path.getsize(v_final) > 0:
-                st.success("🎉 আলহামদুলিল্লাহ সুজন ভাই! আপনার এডিটিং প্রসেস সফল হয়েছে।")
+                st.success("🎉 আলহামদুলিল্লাহ সুজন ভাই! সম্পূর্ণ প্রসেস সফল হয়েছে।")
                 with open(v_final, "rb") as video_file: st.video(video_file.read())
                 with open(v_final, "rb") as file:
                     st.download_button(
