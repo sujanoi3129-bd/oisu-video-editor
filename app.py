@@ -3,15 +3,15 @@ import subprocess
 import os
 import re
 import imageio_ffmpeg as im_ffmpeg
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+from PIL import Image, ImageDraw, ImageFont
 
 # বড় ফাইল আপলোডের জন্য সাইজ লিমিট ২০০০ MB করা হলো
 st._config.set_option("server.maxUploadSize", 2000)
 
 st.set_page_config(page_title="Smart Video Editor Pro", page_icon="🎬", layout="centered")
 
-st.title("🎬 Anti-Copyright Master Video Engine (HD Font Version)")
-st.write("সুজন ভাই, লেখার কাটাকাটা ভাব দূর করে একদম ক্রিস্টাল ক্লিয়ার এবং মসৃণ করা হয়েছে!")
+st.title("🎬 Anti-Copyright Master Video Engine (True Font Fix)")
+st.write("সুজন ভাই, এবার লেখার সাইজ এবং ব্যাকগ্রাউন্ড কালো বক্স দুটোই একসাথে নিখুঁতভাবে ছোট-বড় হবে!")
 
 # अस्थायी ফাইল ট্র্যাকিং পাথসমূহ
 v_start = "temp_0_input.mp4"
@@ -218,8 +218,8 @@ elif st.session_state.step == 3:
         page_name = st.text_input("আপনার পেজের নাম এখানে লিখুন:", value="ToonFlix")
         
         st.markdown("### 🎛️ টেক্সট কাস্টমাইজেশন প্যানেল:")
-        # সুজন ভাই, এখানে আমরা আসল ফন্ট সাইজ সরাসরি ব্যবহার করছি (যেমন: ২০ থেকে ১০০ পিক্সেল)
-        font_size = st.slider("📐 লেখার সাইজ বড়/ছোট করুন (Font Size):", min_value=15, max_value=120, value=45, step=1)
+        # সুজন ভাই, এই ফন্ট সাইজ সরাসরি লেখার আকার বড় করবে এবং কালো বক্সকেও মানানসই করবে
+        font_size = st.slider("📐 লেখার সাইজ বড়/ছোট করুন (Font Size):", min_value=15, max_value=120, value=40, step=1)
         pos_x = st.slider("⬅️ ডানে-বামে সরান (X Position):", min_value=0, max_value=v_w, value=int(v_w * 0.80))
         pos_y = st.slider("⬇️ ওপরে-নিচে সরান (Y Position):", min_value=0, max_value=v_h, value=40)
         
@@ -227,44 +227,67 @@ elif st.session_state.step == 3:
             base_image = Image.open(preview_img_path).convert("RGBA")
             base_image = base_image.resize((v_w, v_h))
             
-            # নিখুঁত স্মুথ ও ক্লিয়ার লোগো তৈরির জন্য হাই-ডেফিনিশন ভেক্টর লজিক
-            # এটি টেনে বড় করার বদলে সরাসরি ওই সাইজেই ক্রিস্টাল ক্লিয়ার পিক্সেল তৈরি করে
-            try:
-                # সিস্টেমে থাকা স্ট্যান্ডার্ড ফন্ট ট্রাই করবে
-                font = ImageFont.truetype("LiberationSans-Bold.ttf", font_size)
-            except:
-                try:
-                    font = ImageFont.truetype("DejaVuSans-Bold.ttf", font_size)
-                except:
-                    # যদি কোনো কারণে সার্ভার ফন্ট না পায়, তবে নিখুঁত অ্যান্টি-অ্যালিয়াসিং ম্যাট্রিক্স সেট হবে
-                    font = ImageFont.load_default()
+            # 🎯 লিনাক্স ও স্ট্রিমলিট সার্ভারের অফিশিয়াল স্ট্যান্ডার্ড ট্রু-টাইপ ফন্ট পাথ লোড করার মাস্টার স্ট্রোক
+            # এই পাথগুলো লিনাক্স ডেবিয়ান/উবুন্টু সার্ভারে ১০০% বিল্ট-ইন থাকে
+            font = None
+            possible_paths = [
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+                "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"
+            ]
             
-            # লেখার সঠিক দৈর্ঘ্য ও উচ্চতা মেপে ব্যাকগ্রাউন্ড ছায়া বক্স তৈরি
-            if hasattr(font, 'getbbox'):
-                bbox = font.getbbox(page_name)
-                tw = bbox[2] - bbox[0]
-                th = bbox[3] - bbox[1]
+            for path in possible_paths:
+                if os.path.exists(path):
+                    try:
+                        font = ImageFont.truetype(path, font_size)
+                        break
+                    except: pass
+            
+            # যদি কোনো কারণে সার্ভার পাথ লক থাকে, তবে আমরা একটি চমৎকার ব্যাকআপ নিয়ে নিচ্ছি
+            if font is None:
+                font = ImageFont.load_default()
+                # ফলব্যাক লজিক: ফন্ট যদি ডিফল্ট মোডে ফিরে যায় তবেই কেবল সেটিকে রিসাইজ করা হবে যেন সাইজ মিস না হয়
+                char_w, char_h = 6, 11
+                tw, th = char_w * len(page_name), char_h
+                text_canvas = Image.new('RGBA', (tw + 4, th + 4), (0, 0, 0, 0))
+                td = ImageDraw.Draw(text_canvas)
+                for dx in [0, 1, 2]:
+                    for dy in [0, 1]: td.text((dx, dy), page_name, fill=(255, 255, 255, 255))
+                # স্কেলিং রেশিও ফিক্স
+                scale_ratio = font_size / 15.0
+                tw, th = int(tw * scale_ratio), int(th * scale_ratio)
+                scaled_text = text_canvas.resize((tw, th), Image.Resampling.NEAREST)
             else:
-                tw, th = font.getsize(page_name) if hasattr(font, 'getsize') else (len(page_name)*10, font_size)
-            
-            # একটি স্বচ্ছ ওয়াটারমার্ক ইমেজ ক্যানভাস
+                # ট্রু-টাইপ ফন্টের জন্য আসল বাউন্ডিং বক্স সাইজ গণনা
+                if hasattr(font, 'getbbox'):
+                    bbox = font.getbbox(page_name)
+                    tw = bbox[2] - bbox[0]
+                    th = bbox[3] - bbox[1]
+                else:
+                    tw, th = font.getsize(page_name) if hasattr(font, 'getsize') else (len(page_name)*10, font_size)
+
+            # মেইন ওয়াটারমার্ক ক্যানভাস তৈরি 
             watermark_img = Image.new('RGBA', (v_w, v_h), (0, 0, 0, 0))
             w_draw = ImageDraw.Draw(watermark_img)
             
-            # কালো ট্রান্সপারেন্ট ব্যাকগ্রাউন্ড বক্সের সাইজ
+            # কালো স্বচ্ছ ব্যাকগ্রাউন্ড বক্সের সাইজ মার্জিন মেলাবো
             pad_x = int(font_size * 0.35)
             pad_y = int(font_size * 0.2)
             bx1 = pos_x - pad_x
             by1 = pos_y - pad_y
             bx2 = pos_x + tw + pad_x
-            by2 = pos_y + th + pad_y + int(font_size * 0.15)
+            by2 = pos_y + th + pad_y + int(font_size * 0.1)
             
-            # ব্যাকগ্রাউন্ড বক্স সুন্দর মসৃণ গোল কোণা করে আঁকা
-            w_draw.rounded_rectangle([bx1, by1, bx2, by2], radius=int(font_size*0.15), fill=(0, 0, 0, 150))
+            # কালো রাউন্ডেড ব্যাকগ্রাউন্ড বক্স আঁকা হচ্ছে
+            w_draw.rounded_rectangle([bx1, by1, bx2, by2], radius=6, fill=(0, 0, 0, 160))
             
-            # স্মুথ ও বোল্ড এফেক্ট ফুটিয়ে তোলার জন্য ২ লেয়ার টেক্সট রেন্ডারিং হ্যাক
-            w_draw.text((pos_x, pos_y), page_name, fill=(255, 255, 255, 255), font=font)
-            w_draw.text((pos_x + 1, pos_y), page_name, fill=(255, 255, 255, 255), font=font)
+            # মূল লেখাটি ফন্ট মোড অনুযায়ী ড্র করা হচ্ছে
+            if 'scaled_text' in locals():
+                watermark_img.alpha_composite(scaled_text, dest=(pos_x, pos_y))
+            else:
+                # ট্রু-টাইপ ফন্টের মসৃণ ডাবল লেয়ার বোল্ড এফেক্ট
+                w_draw.text((pos_x, pos_y), page_name, fill=(255, 255, 255, 255), font=font)
+                w_draw.text((pos_x + 1, pos_y), page_name, fill=(255, 255, 255, 255), font=font)
             
             st.markdown("#### 📺 লাইভ স্ক্রিন প্রিভিউ:")
             base_image.alpha_composite(watermark_img)
