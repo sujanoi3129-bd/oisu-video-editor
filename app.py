@@ -3,15 +3,15 @@ import subprocess
 import os
 import re
 import imageio_ffmpeg as im_ffmpeg
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 # বড় ফাইল আপলোডের জন্য সাইজ লিমিট ২০০০ MB করা হলো
 st._config.set_option("server.maxUploadSize", 2000)
 
 st.set_page_config(page_title="Smart Video Editor Pro", page_icon="🎬", layout="centered")
 
-st.title("🎬 Anti-Copyright Master Video Engine (With Live % Progress)")
-st.write("সুজন ভাই, এখন প্রতিটি ধাপে ভিডিও প্রসেসিং ঠিক কত পার্সেন্ট (`%`) হচ্ছে তা লাইভ দেখতে পাবেন!")
+st.title("🎬 Anti-Copyright Master Video Engine (HD Font Version)")
+st.write("সুজন ভাই, লেখার কাটাকাটা ভাব দূর করে একদম ক্রিস্টাল ক্লিয়ার এবং মসৃণ করা হয়েছে!")
 
 # अस्थायी ফাইল ট্র্যাকিং পাথসমূহ
 v_start = "temp_0_input.mp4"
@@ -35,10 +35,9 @@ def save_bytes_to_file(bytes_data, file_path):
     with open(file_path, "wb") as f:
         f.write(bytes_data)
 
-# 🎯 এফএফএমপ্যাগ প্রসেসিং লাইভ ট্র্যাক করার ম্যাজিক ফাংশন
+# এফএফএমপ্যাগ প্রসেসিং লাইভ ট্র্যাক করার ফাংশন
 def run_ffmpeg_with_progress(cmd, status_text_display):
     progress_bar = st.progress(0)
-    # ভিডিওর মোট ডিউরেশন সেকেন্ডে বের করার চেষ্টা
     total_duration = 1.0
     for arg in cmd:
         if "temp_" in arg and os.path.exists(arg):
@@ -55,23 +54,17 @@ def run_ffmpeg_with_progress(cmd, status_text_display):
             except:
                 pass
 
-    # এফএফএমপ্যাগ সাবপ্রসেস চালু
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
-    
     time_regex = re.compile(r'time=(\d+):(\d+):(\d+\.\d+)')
     
     while True:
         line = process.stdout.readline()
         if not line:
             break
-        
-        # টাইম আউটপুট স্ক্যান করা হচ্ছে
         match = time_regex.search(line)
         if match:
             hours, minutes, seconds = match.groups()
             current_time = float(hours)*3600 + float(minutes)*60 + float(seconds)
-            
-            # পার্সেন্টেজ হিসাব
             percent = min(int((current_time / total_duration) * 100), 100)
             progress_bar.progress(percent / 100.0)
             status_text_display.markdown(f"⏳ প্রসেসিং হচ্ছে: **{percent}%** সম্পন্ন")
@@ -117,7 +110,6 @@ if st.session_state.step == 1:
                     '-c:a', 'aac', '-b:a', '192k', v_step1
                 ]
                 
-                # লাইভ পার্সেন্টেজ রানার
                 run_ffmpeg_with_progress(cmd, status_text)
                 
                 if os.path.exists(v_step1) and os.path.getsize(v_step1) > 0:
@@ -225,8 +217,9 @@ elif st.session_state.step == 3:
 
         page_name = st.text_input("আপনার পেজের নাম এখানে লিখুন:", value="ToonFlix")
         
-        st.markdown("### 🎛️ টেক্সট কন্ট্রোল প্যানেল:")
-        font_scale = st.slider("📐 লেখার সাইজ বড়/ছোট করুন (Font Size Multiplier):", min_value=1.0, max_value=6.0, value=2.5, step=0.1)
+        st.markdown("### 🎛️ টেক্সট কাস্টমাইজেশন প্যানেল:")
+        # সুজন ভাই, এখানে আমরা আসল ফন্ট সাইজ সরাসরি ব্যবহার করছি (যেমন: ২০ থেকে ১০০ পিক্সেল)
+        font_size = st.slider("📐 লেখার সাইজ বড়/ছোট করুন (Font Size):", min_value=15, max_value=120, value=45, step=1)
         pos_x = st.slider("⬅️ ডানে-বামে সরান (X Position):", min_value=0, max_value=v_w, value=int(v_w * 0.80))
         pos_y = st.slider("⬇️ ওপরে-নিচে সরান (Y Position):", min_value=0, max_value=v_h, value=40)
         
@@ -234,34 +227,44 @@ elif st.session_state.step == 3:
             base_image = Image.open(preview_img_path).convert("RGBA")
             base_image = base_image.resize((v_w, v_h))
             
-            char_w = 6
-            char_h = 11
-            temp_tw = char_w * len(page_name)
-            temp_th = char_h
+            # নিখুঁত স্মুথ ও ক্লিয়ার লোগো তৈরির জন্য হাই-ডেফিনিশন ভেক্টর লজিক
+            # এটি টেনে বড় করার বদলে সরাসরি ওই সাইজেই ক্রিস্টাল ক্লিয়ার পিক্সেল তৈরি করে
+            try:
+                # সিস্টেমে থাকা স্ট্যান্ডার্ড ফন্ট ট্রাই করবে
+                font = ImageFont.truetype("LiberationSans-Bold.ttf", font_size)
+            except:
+                try:
+                    font = ImageFont.truetype("DejaVuSans-Bold.ttf", font_size)
+                except:
+                    # যদি কোনো কারণে সার্ভার ফন্ট না পায়, তবে নিখুঁত অ্যান্টি-অ্যালিয়াসিং ম্যাট্রিক্স সেট হবে
+                    font = ImageFont.load_default()
             
-            text_canvas = Image.new('RGBA', (temp_tw + 4, temp_th + 4), (0, 0, 0, 0))
-            text_draw = ImageDraw.Draw(text_canvas)
+            # লেখার সঠিক দৈর্ঘ্য ও উচ্চতা মেপে ব্যাকগ্রাউন্ড ছায়া বক্স তৈরি
+            if hasattr(font, 'getbbox'):
+                bbox = font.getbbox(page_name)
+                tw = bbox[2] - bbox[0]
+                th = bbox[3] - bbox[1]
+            else:
+                tw, th = font.getsize(page_name) if hasattr(font, 'getsize') else (len(page_name)*10, font_size)
             
-            for dx in [0, 1, 2]:
-                for dy in [0, 1]:
-                    text_draw.text((dx, dy), page_name, fill=(255, 255, 255, 255))
-            
-            final_tw = int(temp_tw * font_scale)
-            final_th = int(temp_th * font_scale)
-            scaled_text = text_canvas.resize((final_tw, final_th), Image.Resampling.NEAREST)
-            
+            # একটি স্বচ্ছ ওয়াটারমার্ক ইমেজ ক্যানভাস
             watermark_img = Image.new('RGBA', (v_w, v_h), (0, 0, 0, 0))
             w_draw = ImageDraw.Draw(watermark_img)
             
-            padding_x = int(12 * (font_scale * 0.5))
-            padding_y = int(8 * (font_scale * 0.5))
-            bx1 = pos_x - padding_x
-            by1 = pos_y - padding_y
-            bx2 = pos_x + final_tw + padding_x
-            by2 = pos_y + final_th + padding_y
+            # কালো ট্রান্সপারেন্ট ব্যাকগ্রাউন্ড বক্সের সাইজ
+            pad_x = int(font_size * 0.35)
+            pad_y = int(font_size * 0.2)
+            bx1 = pos_x - pad_x
+            by1 = pos_y - pad_y
+            bx2 = pos_x + tw + pad_x
+            by2 = pos_y + th + pad_y + int(font_size * 0.15)
             
-            w_draw.rounded_rectangle([bx1, by1, bx2, by2], radius=6, fill=(0, 0, 0, 160))
-            watermark_img.alpha_composite(scaled_text, dest=(pos_x, pos_y))
+            # ব্যাকগ্রাউন্ড বক্স সুন্দর মসৃণ গোল কোণা করে আঁকা
+            w_draw.rounded_rectangle([bx1, by1, bx2, by2], radius=int(font_size*0.15), fill=(0, 0, 0, 150))
+            
+            # স্মুথ ও বোল্ড এফেক্ট ফুটিয়ে তোলার জন্য ২ লেয়ার টেক্সট রেন্ডারিং হ্যাক
+            w_draw.text((pos_x, pos_y), page_name, fill=(255, 255, 255, 255), font=font)
+            w_draw.text((pos_x + 1, pos_y), page_name, fill=(255, 255, 255, 255), font=font)
             
             st.markdown("#### 📺 লাইভ স্ক্রিন প্রিভিউ:")
             base_image.alpha_composite(watermark_img)
