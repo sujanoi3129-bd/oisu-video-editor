@@ -1,16 +1,17 @@
 import streamlit as st
 import subprocess
 import os
+import urllib.request
 import imageio_ffmpeg as im_ffmpeg
 from PIL import Image, ImageDraw, ImageFont
 
-# বড় ফাইল আপলোডের জন্য সাইজ লিমিট ২০০০ MB
+# বড় ফাইল আপলোডের জন্য সাইজ লিমিট ২০০০ MB করা হলো
 st._config.set_option("server.maxUploadSize", 2000)
 
 st.set_page_config(page_title="Smart Video Editor Pro", page_icon="🎬", layout="centered")
 
 st.title("🎬 Anti-Copyright Master Video Engine")
-st.write("সুজন ভাই, এবার আপনার পেজের নাম হবে একদম স্টাইলিশ, মোটা এবং চকচকে 3D Glow এফেক্টে!")
+st.write("সুজন ভাই, এখন ফন্ট হবে একদম পরিষ্কার, বোল্ড এবং পেছনের ছায়াও বসবে নিখুঁত মাপে!")
 
 # অস্থায়ী ফাইল ট্র্যাকিং পাথসমূহ
 v_start = "temp_0_input.mp4"
@@ -20,6 +21,19 @@ v_step3 = "temp_3_named.mp4"
 v_final = "final_perfect_video.mp4"
 watermark_path = "temp_watermark_text.png"
 preview_img_path = "temp_preview_frame.jpg"
+font_path = "Roboto-Bold.ttf"
+
+# 🎯 গুগল সার্ভার থেকে সুন্দর একটি বোল্ড ফন্ট অটো-ডাউনলোড করার লজিক
+@st.cache_resource
+def download_professional_font():
+    if not os.path.exists(font_path):
+        try:
+            url = "https://github.com/google/fonts/raw/main/apache/roboto/Roboto-Bold.ttf"
+            urllib.request.urlretrieve(url, font_path)
+        except Exception as e:
+            pass
+
+download_professional_font()
 
 # সেশন স্টেট ইনিশিয়েলাইজেশন
 if "step" not in st.session_state:
@@ -35,7 +49,7 @@ def save_bytes_to_file(bytes_data, file_path):
         f.write(bytes_data)
 
 # ==========================================
-# 🟢 ধাপ ১: ভিডিও আপলোড ও কপিরাইট রিমুভ
+# 🟢  ধাপ ১: ভিডিও আপলোড ও কপিরাইট রিমুভ
 # ==========================================
 if st.session_state.step == 1:
     st.header("Step ১: ভিডিও আপলোড ও কপিরাইট ফিল্টার")
@@ -84,7 +98,7 @@ if st.session_state.step == 1:
                     if os.path.exists(v_start): os.remove(v_start)
 
 # ==========================================
-# 🟢 ধাপ ২: ভিডিও দেখে মিনিট-সেকেন্ডে কাটা
+# 🟢  ধাপ ২: ভিডিও দেখে মিনিট-সেকেন্ডে কাটা
 # ==========================================
 elif st.session_state.step == 2:
     st.header("Step ২: ভিডিও কাটিং টাইমলাইন")
@@ -145,11 +159,11 @@ elif st.session_state.step == 2:
                 if os.path.exists(v_step1): os.remove(v_step1)
 
 # ==========================================
-# 🟢 🎬 🎯 💥 ধাপ ৩: চকচকে প্রফেশনাল টেক্সট (Watermark Fix)
+# 🟢  ধাপ ৩: হাই-কোয়ালিটি ব্র্যান্ডিং ও লাইভ প্রিভিউ ফিক্স
 # ==========================================
 elif st.session_state.step == 3:
-    st.header("Step ৩: আপনার পেজের চকচকে লোগো বসান")
-    st.write("সুজন ভাই, এখন নিচের স্লাইডার নাড়ালেই লেখা কোথায় যাচ্ছে তা ছবির ওপরে একদম চকচকে লোগোর মতো লাইভ দেখতে পাবেন।")
+    st.header("Step ৩: লাইভ প্রিভিউ দেখে সাইজ ও পজিশন মেলান")
+    st.write("সুজন ভাই, এখন আসল বোল্ড ফন্ট লোড করা হয়েছে। লেখা এবং ব্যাকগ্রাউন্ড দুইটাই নিখুঁত থাকবে।")
     
     if st.session_state.video_data is not None:
         save_bytes_to_file(st.session_state.video_data, v_step2)
@@ -174,51 +188,60 @@ elif st.session_state.step == 3:
                                 break
                         except: pass
 
-        page_name = st.text_input("আপনার পেজের নাম এখানে লিখুন (যেমন: Toon Flix):", value="Toon Flix")
+        page_name = st.text_input("আপনার পেজের নাম এখানে লিখুন:", value="ToonFlix")
         
-        st.markdown("### 🎛️ এডজাস্টমেন্ট টুলস:")
-        font_size = st.slider("📐 লোগোর সাইজ (Font Size):", min_value=15, max_value=150, value=65, step=2)
-        pos_x = st.slider("⬅️ ডানে-বামে সরান (X Position):", min_value=0, max_value=v_w, value=int(v_w * 0.72))
-        pos_y = st.slider("⬇️ ওপরে-নিচে সরান (Y Position):", min_value=0, max_value=v_h, value=int(v_h * 0.88))
+        st.markdown("### 🎛️ টেক্সট কন্ট্রোল প্যানেল:")
+        font_size = st.slider("📐 লেখার সাইজ বড়/ছোট করুন (Font Size):", min_value=12, max_value=120, value=35, step=1)
+        pos_x = st.slider("⬅️ ডানে-বামে সরান (X Position):", min_value=0, max_value=v_w, value=int(v_w * 0.80))
+        pos_y = st.slider("⬇️ ওপরে-নিচে সরান (Y Position):", min_value=0, max_value=v_h, value=40)
         
         if os.path.exists(preview_img_path) and page_name:
             base_image = Image.open(preview_img_path).convert("RGBA")
             base_image = base_image.resize((v_w, v_h))
             
-            # Pillow দিয়ে চকচকে (Glow effect) টেক্সট ইমেজ তৈরির লজিক
-            w_img = Image.new('RGBA', (v_w, v_h), (255, 255, 255, 0))
-            w_draw = ImageDraw.Draw(w_img)
-            font = ImageFont.load_default()
+            # ট্রু টাইপ ফন্ট (`TrueType Font`) লোড করা হচ্ছে
+            if os.path.exists(font_path):
+                font = ImageFont.truetype(font_path, font_size)
+            else:
+                font = ImageFont.load_default()
             
-            # টেক্সটের দৈর্ঘ্য ও উচ্চতা নির্ণয়
-            t_w_calc = int(len(page_name) * (font_size * 0.65))
-            t_h_calc = int(font_size * 1.4)
+            # লেখার নিখুঁত বাউন্ডিং বক্স সাইজ নেওয়া হচ্ছে
+            draw_test = ImageDraw.Draw(base_image)
+            try:
+                left, top, right, bottom = draw_test.textbbox((0, 0), page_name, font=font)
+                text_w = right - left
+                text_h = bottom - top
+            except:
+                text_w = len(page_name) * (font_size * 0.6)
+                text_h = font_size
             
-            # চকচকে এফেক্টের জন্য লেখাটিকে বড় করে রেন্ডার করার টেকনিক
-            text_canvas = Image.new('RGBA', (len(page_name)*25, 30), (0, 0, 0, 0))
-            text_draw = ImageDraw.Draw(text_canvas)
+            # ওয়াটারমার্কের স্বচ্ছ ক্যানভাস
+            watermark_img = Image.new('RGBA', (v_w, v_h), (0, 0, 0, 0))
+            w_draw = ImageDraw.Draw(watermark_img)
             
-            # মোটা এবং গ্লো করার জন্য কয়েকবার ওভারল্যাপ করা (Bold & Glow hack)
-            for offset in [(0,0), (2,0), (0,2), (2,2), (1,1)]:
-                text_draw.text((3 + offset[0], 3 + offset[1]), page_name, fill=(255, 255, 255, 255), font=font)
-                
-            # লেখাটিকে প্রমাণ সাইজে বড় করা হলো
-            scaled_text = text_canvas.resize((t_w_calc, t_h_calc), Image.Resampling.NEAREST)
+            # লেখার চারপাশের মার্জিন এবং নিখুঁত রাউন্ড ব্যাকগ্রাউন্ড ছায়া বক্স
+            padding_x = 15
+            padding_y = 10
+            bx1 = pos_x - padding_x
+            by1 = pos_y - padding_y
+            bx2 = pos_x + text_w + padding_x
+            by2 = pos_y + text_h + padding_y + 5
             
-            # ছবির ওপর বসানো
-            w_img.alpha_composite(scaled_text, dest=(pos_x, pos_y))
+            # কালো স্বচ্ছ ব্যাকগ্রাউন্ড আঁকা হচ্ছে (১০% এরিয়া নয়, শুধু টেক্সটের এরিয়া)
+            w_draw.rounded_rectangle([bx1, by1, bx2, by2], radius=8, fill=(0, 0, 0, 170))
             
-            st.markdown("#### 📺 লাইভ লোগো প্রিভিউ (চকচকে এবং পরিষ্কার):")
-            # ছবির ওপর ওয়াটারমার্ক বসানো Live Preview
-            base_image.alpha_composite(w_img, dest=(0, 0))
+            # মূল ক্রিস্টাল ক্লিয়ার টেক্সট ড্র করা হচ্ছে
+            w_draw.text((pos_x, pos_y), page_name, fill=(255, 255, 255, 255), font=font)
+            
+            st.markdown("#### 📺 লাইভ স্ক্রিন প্রিভিউ:")
+            base_image.alpha_composite(watermark_img)
             st.image(base_image, use_container_width=True)
             
-        if st.button("🎬 ৪. এই মাপে লোগো النهائية লক করে ভিডিও তৈরি করুন"):
+        if st.button("🎬 ৪. এই পজিশন চূড়ান্ত করে ভিডিও তৈরি করুন"):
             with st.spinner("পুরো ভিডিওতে নাম নিখুঁতভাবে বসানো হচ্ছে..."):
                 try:
-                    w_img.save(watermark_path)
+                    watermark_img.save(watermark_path)
                     
-                    # এফএফএমপ্যাগ দিয়ে ইমেজ ওভারলে ও পিক্সেল ফরম্যাট ফিক্স করা
                     cmd = [
                         ffmpeg_exe, '-y', '-i', v_step2, '-i', watermark_path,
                         '-filter_complex', '[0:v][1:v]overlay=0:0:shortest=0,format=yuv420p[v]',
@@ -229,7 +252,7 @@ elif st.session_state.step == 3:
                     
                     if os.path.exists(v_step3) and os.path.getsize(v_step3) > 0:
                         with open(v_step3, "rb") as f: st.session_state.video_data = f.read()
-                        st.success("✅ নাম সফলভাবে চকচকে লোগো এফেক্টে ভিডিওতে বসে গেছে!")
+                        st.success("✅ নাম সফলভাবে ভিডিওতে বসে গেছে!")
                         st.session_state.step = 4
                         st.rerun()
                 except Exception as e:
@@ -253,12 +276,14 @@ elif st.session_state.step == 4:
             
             if uploaded_image is not None:
                 with open("temp_thumb.jpg", "wb") as f: f.write(uploaded_image.read())
-                with st.spinner("th থাম্বনেইল সেট করা হচ্ছে..."):
+                with st.spinner("থাম্বনেইল সেট করা হচ্ছে এবং অ디오 সিঙ্ক লক করা হচ্ছে..."):
                     cmd = [
                         ffmpeg_exe, '-y', '-i', v_step3, '-i', "temp_thumb.jpg",
-                        '-filter_complex', '[1:v]scale=iw:ih[t];[0:v][t]overlay=enable=\'lte(t,5)\':shortest=0[v]',
-                        '-map', '[v]', '-map', '0:a',
-                        '-c:v', 'libx264', '-crf', '20', '-c:a', 'copy', v_final
+                        '-filter_complex', 
+                        '[1:v]scale=iw:ih[t];[0:v][t]overlay=enable=\'lte(t,5)\':shortest=0[v];'
+                        '[0:a]adelay=5000|5000[a]',
+                        '-map', '[v]', '-map', '[a]',
+                        '-c:v', 'libx264', '-crf', '20', '-c:a', 'aac', v_final
                     ]
                     subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 if os.path.exists("temp_thumb.jpg"): os.remove("temp_thumb.jpg")
@@ -266,7 +291,7 @@ elif st.session_state.step == 4:
                 os.rename(v_step3, v_final)
                 
             if os.path.exists(v_final) and os.path.getsize(v_final) > 0:
-                st.success("🎉 আলহামদুলিল্লাহ সুজন ভাই! সম্পূর্ণ প্রসেস সফল হয়েছে।")
+                st.success("🎉 আলহামদুলিল্লাহ সুজন ভাই! আপনার এডিটিং প্রসেস সফল হয়েছে।")
                 with open(v_final, "rb") as video_file: st.video(video_file.read())
                 with open(v_final, "rb") as file:
                     st.download_button(
@@ -279,7 +304,7 @@ elif st.session_state.step == 4:
                 st.error("❌ ফাইনাল রেন্ডারিং এ সমস্যা হয়েছে।")
 
     st.markdown("---")
-    if st.button("🔄 নতুন ভিডিও এডিটিং শুরু করুন"):
+    if st.button("🔄 নতুন ভিডিও এডিٹنگ শুরু করুন"):
         for f in [v_start, v_step1, v_step2, v_step3, v_final, preview_img_path]:
             if os.path.exists(f): os.remove(f)
         st.session_state.step = 1
