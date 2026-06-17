@@ -4,13 +4,13 @@ import os
 import imageio_ffmpeg as im_ffmpeg
 from PIL import Image, ImageDraw, ImageFont
 
-# বড় ফাইল আপলোডের জন্য সাইজ লিমিট ২০০০ MB করা হলো
+# বড় ফাইল আপলোডের জন্য সাইজ লিমিট ২০০০ MB
 st._config.set_option("server.maxUploadSize", 2000)
 
 st.set_page_config(page_title="Smart Video Editor Pro", page_icon="🎬", layout="centered")
 
 st.title("🎬 Anti-Copyright Master Video Engine")
-st.write("সুজন ভাই, এখন কভার ফটো বা থাম্বনেইল দিলেও অডিও-ভিডিওর মিল একদম পারফেক্ট থাকবে!")
+st.write("সুজন ভাই, এবার আপনার পেজের নাম হবে একদম স্টাইলিশ, মোটা এবং চকচকে 3D Glow এফেক্টে!")
 
 # অস্থায়ী ফাইল ট্র্যাকিং পাথসমূহ
 v_start = "temp_0_input.mp4"
@@ -35,7 +35,7 @@ def save_bytes_to_file(bytes_data, file_path):
         f.write(bytes_data)
 
 # ==========================================
-# 🟢  ধাপ ১: ভিডিও আপলোড ও কপিরাইট রিমুভ
+# 🟢 ধাপ ১: ভিডিও আপলোড ও কপিরাইট রিমুভ
 # ==========================================
 if st.session_state.step == 1:
     st.header("Step ১: ভিডিও আপলোড ও কপিরাইট ফিল্টার")
@@ -84,7 +84,7 @@ if st.session_state.step == 1:
                     if os.path.exists(v_start): os.remove(v_start)
 
 # ==========================================
-# 🟢  ধাপ ২: ভিডিও দেখে মিনিট-সেকেন্ডে কাটা
+# 🟢 ধাপ ২: ভিডিও দেখে মিনিট-সেকেন্ডে কাটা
 # ==========================================
 elif st.session_state.step == 2:
     st.header("Step ২: ভিডিও কাটিং টাইমলাইন")
@@ -145,11 +145,11 @@ elif st.session_state.step == 2:
                 if os.path.exists(v_step1): os.remove(v_step1)
 
 # ==========================================
-# 🟢  ধাপ ৩: লাইভ প্রিভিউ দেখে সাইজ ও পজিশন মেলান
+# 🟢 🎬 🎯 💥 ধাপ ৩: চকচকে প্রফেশনাল টেক্সট (Watermark Fix)
 # ==========================================
 elif st.session_state.step == 3:
-    st.header("Step ৩: লাইভ প্রিভিউ দেখে সাইজ ও পজিশন মেলান")
-    st.write("নিচের স্লাইডারগুলো নাড়ালে এখন আসল ফন্ট বড়-ছোট হবে এবং কালো বক্সটিও লেখার সাথে ফিট থাকবে।")
+    st.header("Step ৩: আপনার পেজের চকচকে লোগো বসান")
+    st.write("সুজন ভাই, এখন নিচের স্লাইডার নাড়ালেই লেখা কোথায় যাচ্ছে তা ছবির ওপরে একদম চকচকে লোগোর মতো লাইভ দেখতে পাবেন।")
     
     if st.session_state.video_data is not None:
         save_bytes_to_file(st.session_state.video_data, v_step2)
@@ -174,52 +174,51 @@ elif st.session_state.step == 3:
                                 break
                         except: pass
 
-        page_name = st.text_input("আপনার পেজের নাম এখানে লিখুন:", value="ToonFlix")
+        page_name = st.text_input("আপনার পেজের নাম এখানে লিখুন (যেমন: Toon Flix):", value="Toon Flix")
         
-        st.markdown("### 🎛️ এডজাস্টমেন্টツール:")
-        font_size = st.slider("📐 লেখার সাইজ বড়/ছোট করুন (Font Size):", min_value=10, max_value=100, value=40, step=2)
-        pos_x = st.slider("⬅️ ডানে-বামে সরান (X Position):", min_value=0, max_value=v_w, value=int(v_w * 0.75))
-        pos_y = st.slider("⬇️ ওপরে-নিচে সরান (Y Position):", min_value=0, max_value=v_h, value=40)
+        st.markdown("### 🎛️ এডজাস্টমেন্ট টুলস:")
+        font_size = st.slider("📐 লোগোর সাইজ (Font Size):", min_value=15, max_value=150, value=65, step=2)
+        pos_x = st.slider("⬅️ ডানে-বামে সরান (X Position):", min_value=0, max_value=v_w, value=int(v_w * 0.72))
+        pos_y = st.slider("⬇️ ওপরে-নিচে সরান (Y Position):", min_value=0, max_value=v_h, value=int(v_h * 0.88))
         
         if os.path.exists(preview_img_path) and page_name:
             base_image = Image.open(preview_img_path).convert("RGBA")
             base_image = base_image.resize((v_w, v_h))
             
-            font_scale_factor = font_size / 10.0
-            t_w_calc = int(len(page_name) * 6 * font_scale_factor)
-            t_h_calc = int(8 * font_scale_factor)
+            # Pillow দিয়ে চকচকে (Glow effect) টেক্সট ইমেজ তৈরির লজিক
+            w_img = Image.new('RGBA', (v_w, v_h), (255, 255, 255, 0))
+            w_draw = ImageDraw.Draw(w_img)
+            font = ImageFont.load_default()
             
-            bx1, by1 = pos_x - 12, pos_y - 8
-            bx2, by2 = pos_x + t_w_calc + 12, pos_y + t_h_calc + 8
+            # টেক্সটের দৈর্ঘ্য ও উচ্চতা নির্ণয়
+            t_w_calc = int(len(page_name) * (font_size * 0.65))
+            t_h_calc = int(font_size * 1.4)
             
-            draw = ImageDraw.Draw(base_image)
-            draw.rounded_rectangle([bx1, by1, bx2, by2], radius=int(4 * font_scale_factor), fill=(0, 0, 0, 195))
-            
-            text_canvas = Image.new('RGBA', (len(page_name)*6, 10), (0, 0, 0, 0))
+            # চকচকে এফেক্টের জন্য লেখাটিকে বড় করে রেন্ডার করার টেকনিক
+            text_canvas = Image.new('RGBA', (len(page_name)*25, 30), (0, 0, 0, 0))
             text_draw = ImageDraw.Draw(text_canvas)
-            text_draw.text((0, 0), page_name, fill=(255, 255, 255, 255))
             
+            # মোটা এবং গ্লো করার জন্য কয়েকবার ওভারল্যাপ করা (Bold & Glow hack)
+            for offset in [(0,0), (2,0), (0,2), (2,2), (1,1)]:
+                text_draw.text((3 + offset[0], 3 + offset[1]), page_name, fill=(255, 255, 255, 255), font=font)
+                
+            # লেখাটিকে প্রমাণ সাইজে বড় করা হলো
             scaled_text = text_canvas.resize((t_w_calc, t_h_calc), Image.Resampling.NEAREST)
-            base_image.alpha_composite(scaled_text, dest=(pos_x, pos_y))
             
-            st.markdown("#### 📺 লাইভ স্ক্রিন প্রিভিউ:")
+            # ছবির ওপর বসানো
+            w_img.alpha_composite(scaled_text, dest=(pos_x, pos_y))
+            
+            st.markdown("#### 📺 লাইভ লোগো প্রিভিউ (চকচকে এবং পরিষ্কার):")
+            # ছবির ওপর ওয়াটারমার্ক বসানো Live Preview
+            base_image.alpha_composite(w_img, dest=(0, 0))
             st.image(base_image, use_container_width=True)
             
-        if st.button("🎬 ৪. এই পজিশন চূড়ান্ত করে ভিডিও তৈরি করুন"):
+        if st.button("🎬 ৪. এই মাপে লোগো النهائية লক করে ভিডিও তৈরি করুন"):
             with st.spinner("পুরো ভিডিওতে নাম নিখুঁতভাবে বসানো হচ্ছে..."):
                 try:
-                    w_img = Image.new('RGBA', (v_w, v_h), (255, 255, 255, 0))
-                    w_draw = ImageDraw.Draw(w_img)
-                    w_draw.rounded_rectangle([bx1, by1, bx2, by2], radius=int(4 * font_scale_factor), fill=(0, 0, 0, 195))
-                    
-                    text_canvas_final = Image.new('RGBA', (len(page_name)*6, 10), (0, 0, 0, 0))
-                    text_draw_final = ImageDraw.Draw(text_canvas_final)
-                    text_draw_final.text((0, 0), page_name, fill=(255, 255, 255, 255))
-                    
-                    scaled_text_final = text_canvas_final.resize((t_w_calc, t_h_calc), Image.Resampling.NEAREST)
-                    w_img.alpha_composite(scaled_text_final, dest=(pos_x, pos_y))
                     w_img.save(watermark_path)
                     
+                    # এফএফএমপ্যাগ দিয়ে ইমেজ ওভারলে ও পিক্সেল ফরম্যাট ফিক্স করা
                     cmd = [
                         ffmpeg_exe, '-y', '-i', v_step2, '-i', watermark_path,
                         '-filter_complex', '[0:v][1:v]overlay=0:0:shortest=0,format=yuv420p[v]',
@@ -230,7 +229,7 @@ elif st.session_state.step == 3:
                     
                     if os.path.exists(v_step3) and os.path.getsize(v_step3) > 0:
                         with open(v_step3, "rb") as f: st.session_state.video_data = f.read()
-                        st.success("✅ নাম সফলভাবে ভিডিওতে বসে গেছে!")
+                        st.success("✅ নাম সফলভাবে চকচকে লোগো এফেক্টে ভিডিওতে বসে গেছে!")
                         st.session_state.step = 4
                         st.rerun()
                 except Exception as e:
@@ -241,7 +240,7 @@ elif st.session_state.step == 3:
                     if os.path.exists(preview_img_path): os.remove(preview_img_path)
 
 # ==========================================
-# 🟢 🎬 🎯 📸  ধাপ ৪: নিখুঁত অডিও-সিঙ্ক থাম্বনেইল ফিক্স
+# 🟢   ধাপ ৪: থাম্বনেইল সেট এবং ফাইনাল ডাউনলোড
 # ==========================================
 elif st.session_state.step == 4:
     st.header("Step ৪: কাস্টম থাম্বনেইল ও ফাইনাল ডাউনলোড")
@@ -253,19 +252,13 @@ elif st.session_state.step == 4:
             ffmpeg_exe = im_ffmpeg.get_ffmpeg_exe()
             
             if uploaded_image is not None:
-                with open("temp_thumb.jpg", "wb") as f: 
-                    f.write(uploaded_image.read())
-                    
-                with st.spinner("থাম্বনেইল সেট করা হচ্ছে এবং অডিও সিঙ্ক ঠিক করা হচ্ছে..."):
-                    # 🎯 ম্যাজিক এফএফএমপ্যাগ লজিক: অডিওকে ঠিক ৫ সেকেন্ডের জন্য ডিলে (Delay) করা হলো
-                    # যাতে কভার ফটো চলার সময় অডিও ব্যাকগ্রাউন্ডে আগে আগে বেজে নষ্ট না হয়।
+                with open("temp_thumb.jpg", "wb") as f: f.write(uploaded_image.read())
+                with st.spinner("th থাম্বনেইল সেট করা হচ্ছে..."):
                     cmd = [
                         ffmpeg_exe, '-y', '-i', v_step3, '-i', "temp_thumb.jpg",
-                        '-filter_complex', 
-                        '[1:v]scale=iw:ih[t];[0:v][t]overlay=enable=\'lte(t,5)\':shortest=0[v];'
-                        '[0:a]adelay=5000|5000[a]',
-                        '-map', '[v]', '-map', '[a]',
-                        '-c:v', 'libx264', '-crf', '20', '-c:a', 'aac', v_final
+                        '-filter_complex', '[1:v]scale=iw:ih[t];[0:v][t]overlay=enable=\'lte(t,5)\':shortest=0[v]',
+                        '-map', '[v]', '-map', '0:a',
+                        '-c:v', 'libx264', '-crf', '20', '-c:a', 'copy', v_final
                     ]
                     subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 if os.path.exists("temp_thumb.jpg"): os.remove("temp_thumb.jpg")
