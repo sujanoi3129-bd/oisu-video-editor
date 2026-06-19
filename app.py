@@ -3,24 +3,20 @@ import subprocess
 import os
 import re
 import imageio_ffmpeg as im_ffmpeg
-from PIL import Image, ImageDraw, ImageFont
 
 # বড় ফাইল আপলোডের জন্য সাইজ লিমিট ২০০০ MB করা হলো
 st._config.set_option("server.maxUploadSize", 2000)
 
 st.set_page_config(page_title="Smart Video Editor Pro", page_icon="🎬", layout="centered")
 
-st.title("🎬 Anti-Copyright Master Video Engine (Step-Fix Version)")
-st.write("সুজন ভাই, এই কোডটিতে ১০০% হওয়ার পর অটোমেটিক পরবর্তী ধাপে চলে যাবে ইনশাল্লাহ।")
+st.title("🎬 Anti-Copyright Master Video Engine (Step-Fix)")
+st.write("সুজন ভাই, কোড থেকে টেক্সট বসানোর অকেজো সিস্টেমটি সফলভাবে বাদ দেওয়া হয়েছে।")
 
 # অস্থায়ী ফাইল ট্র্যাকিং পাথসমূহ
 v_start = "temp_0_input.mp4"
 v_step1 = "temp_1_copyright_free.mp4"
 v_step2 = "temp_2_cropped.mp4"
-v_step3 = "temp_3_named.mp4"
 v_final = "final_perfect_video.mp4"
-watermark_path = "temp_watermark_text.png"
-preview_img_path = "temp_preview_frame.jpg"
 
 # সেশন স্টেট ইনিশিয়েলাইজেশন
 if "step" not in st.session_state:
@@ -72,7 +68,7 @@ def run_ffmpeg_with_progress(cmd, status_text_display):
             status_text_display.markdown(f"⏳ প্রসেসিং হচ্ছে: **{percent}%** সম্পন্ন")
             
     process.wait()
-    progress_bar.progress(1.0) # প্রোগ্রেস বার ফুল করা হলো
+    progress_bar.progress(1.0)
     progress_bar.empty()
 
 # ==========================================
@@ -95,8 +91,8 @@ if st.session_state.step == 1:
             try:
                 ffmpeg_exe = im_ffmpeg.get_ffmpeg_exe()
                 
-                # আগের কোনো পুরনো আবর্জনা ফাইল থাকলে তা ডিলিট করা
-                for f in [v_start, v_step1, v_step2, v_step3, v_final]:
+                # আগের কোনো পুরনো ফাইল থাকলে ডিলিট করা
+                for f in [v_start, v_step1, v_step2, v_final]:
                     if os.path.exists(f): os.remove(f)
                     
                 with open(v_start, "wb") as f:
@@ -120,14 +116,12 @@ if st.session_state.step == 1:
                 
                 run_ffmpeg_with_progress(cmd, status_text)
                 
-                # 🎯 সবচেয়ে গুরুত্বপূর্ণ ফিক্স: ফাইল সঠিকভাবে তৈরি হয়েছে কিনা তা চেক করা
                 if os.path.exists(v_step1) and os.path.getsize(v_step1) > 0:
                     with open(v_step1, "rb") as f:
                         st.session_state.video_data = f.read()
                     
-                    # সেশন ডাইরেক্ট আপডেট করা হলো যেন লুপে না আটকে
                     st.session_state.step = 2
-                    status_text.success("✅ ধাপ ১ সফল! পরবর্তী ধাপে যাওয়া হচ্ছে...")
+                    status_text.success("✅  ধাপ ১ সফল! পরবর্তী ধাপে যাওয়া হচ্ছে...")
                     st.rerun()
                 else:
                     st.error("❌ ভিডিও প্রসেস সম্পূর্ণ হয়নি। দয়া করে আবার চেষ্টা করুন।")
@@ -194,133 +188,32 @@ elif st.session_state.step == 2:
             run_ffmpeg_with_progress(cmd, status_text)
             
             if os.path.exists(v_step2) and os.path.getsize(v_step2) > 0:
-                with open(v_step2, "rb") as f: st.session_state.video_data = f.read()
+                with open(v_step2, "rb") as f: 
+                    st.session_state.video_data = f.read()
                 st.session_state.step = 3
                 st.rerun()
             if os.path.exists(v_step1): os.remove(v_step1)
 
 # ==========================================
-# 🟢  ধাপ ৩: লাইভ প্রিভিউ ও লগো ফিক্স
+# 🟢  ধাপ ৩: থাম্বনেইল সেট এবং ফাইনাল ডাউনলোড
 # ==========================================
 elif st.session_state.step == 3:
-    st.header("Step ৩: লাইভ প্রিভিউ দেখে সাইজ ও পজিশন মেলান")
-    
-    if st.session_state.video_data is not None:
-        save_bytes_to_file(st.session_state.video_data, v_step2)
-        ffmpeg_exe = im_ffmpeg.get_ffmpeg_exe()
-        
-        if not os.path.exists(preview_img_path):
-            extract_cmd = [ffmpeg_exe, '-y', '-i', v_step2, '-ss', '00:00:01', '-vframes', '1', preview_img_path]
-            subprocess.run(extract_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            
-        v_w, v_h = 1280, 720
-        probe_cmd = [ffmpeg_exe, '-i', v_step2]
-        probe_result = subprocess.run(probe_cmd, stderr=subprocess.PIPE, text=True)
-        for line in probe_result.stderr.split('\n'):
-            if 'Video:' in line and ',' in line:
-                parts = line.split(',')
-                for part in parts:
-                    if 'x' in part:
-                        try:
-                            dims = part.strip().split(' ')[0].split('x')
-                            if len(dims) >= 2 and dims[0].isdigit():
-                                v_w, v_h = int(dims[0]), int(dims[1])
-                                break
-                        except: pass
-
-        page_name = st.text_input("আপনার পেজের নাম এখানে লিখুন (ইংরেজিতে):", value="ToonFlix")
-        
-        st.markdown("### 🎛️ টেক্সট কাস্টমাইজেশন প্যানেল:")
-        font_size = st.slider("📐 লেখার সাইজ বড়/ছোট করুন (Font Size):", min_value=15, max_value=150, value=40, step=1)
-        pos_x = st.slider("⬅️ ডানে-বামে সরান (X Position):", min_value=0, max_value=v_w, value=int(v_w * 0.80))
-        pos_y = st.slider("⬇️ ওপরে-নিচে সরান (Y Position):", min_value=0, max_value=v_h, value=40)
-        
-        if os.path.exists(preview_img_path) and page_name:
-            base_image = Image.open(preview_img_path).convert("RGBA")
-            base_image = base_image.resize((v_w, v_h))
-            
-            base_font = ImageFont.load_default()
-            text_canvas = Image.new('RGBA', (v_w, v_h), (0, 0, 0, 0))
-            text_draw = ImageDraw.Draw(text_canvas)
-            
-            left, top, right, bottom = text_draw.textbbox((0, 0), page_name, font=base_font)
-            orig_w = right - left
-            orig_h = bottom - top
-            
-            scale_factor = font_size / 10.0
-            tw = int(orig_w * scale_factor)
-            th = int(orig_h * scale_factor)
-            
-            pad_x = int(6 * scale_factor)
-            pad_y = int(5 * scale_factor)
-            
-            bx1 = pos_x - pad_x
-            by1 = pos_y - pad_y
-            bx2 = pos_x + tw + pad_x
-            by2 = pos_y + th + pad_y
-            
-            watermark_img = Image.new('RGBA', (v_w, v_h), (0, 0, 0, 0))
-            w_draw = ImageDraw.Draw(watermark_img)
-            w_draw.rounded_rectangle([bx1, by1, bx2, by2], radius=int(3 * scale_factor), fill=(0, 0, 0, 170))
-            
-            txt_layer = Image.new('RGBA', (orig_w if orig_w > 0 else 10, orig_h if orig_h > 0 else 10), (0,0,0,0))
-            t_draw = ImageDraw.Draw(txt_layer)
-            t_draw.text((0, 0), page_name, fill=(255, 255, 255, 255), font=base_font)
-            
-            if orig_w > 0 and orig_h > 0:
-                txt_layer = txt_layer.resize((tw, th), Image.Resampling.LANCZOS)
-                
-            watermark_img.paste(txt_layer, (pos_x, pos_y), txt_layer)
-            
-            st.markdown("#### 📺 লাইভ স্ক্রিন প্রিভিউ:")
-            base_image.alpha_composite(watermark_img)
-            st.image(base_image, use_container_width=True)
-            
-        if st.button("🎬 ৪. এই মাপে পেজের নাম লক করুন"):
-            status_text = st.empty()
-            status_text.markdown("🏷️ পুরো ভিডিওতে নাম যুক্ত করা হচ্ছে...")
-            try:
-                watermark_img.save(watermark_path)
-                
-                cmd = [
-                    ffmpeg_exe, '-y', '-i', v_step2, '-i', watermark_path,
-                    '-filter_complex', '[0:v][1:v]overlay=0:0:shortest=0,format=yuv420p[v]',
-                    '-map', '[v]', '-map', '0:a',
-                    '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '22', '-c:a', 'copy', v_step3
-                ]
-                
-                run_ffmpeg_with_progress(cmd, status_text)
-                
-                if os.path.exists(v_step3) and os.path.getsize(v_step3) > 0:
-                    with open(v_step3, "rb") as f: st.session_state.video_data = f.read()
-                    st.session_state.step = 4
-                    st.rerun()
-            except Exception as e:
-                st.error(f"ভুল হয়েছে: {str(e)}")
-            finally:
-                if os.path.exists(v_step2): os.remove(v_step2)
-                if os.path.exists(watermark_path): os.remove(watermark_path)
-                if os.path.exists(preview_img_path): os.remove(preview_img_path)
-
-# ==========================================
-# 🟢   ধাপ ৪: থাম্বনেইল সেট এবং ফাইনাল ডাউনলোড
-# ==========================================
-elif st.session_state.step == 4:
-    st.header("Step ৪: কাস্টম থাম্বনেইল ও ফাইনাল ডাউনলোড")
+    st.header("Step ৩: কাস্টম থাম্বনেইল ও ফাইনাল ডাউনলোড")
     uploaded_image = st.file_uploader("📷 থাম্বনেইল ছবি আপলোড করুন (না দিলেও সমস্যা নেই):", type=["jpg", "jpeg", "png"])
     
     if st.button("🎬 ফাইনাল ভিডিও রেন্ডার করুন"):
         if st.session_state.video_data is not None:
-            save_bytes_to_file(st.session_state.video_data, v_step3)
+            save_bytes_to_file(st.session_state.video_data, v_step2)
             ffmpeg_exe = im_ffmpeg.get_ffmpeg_exe()
             
             if uploaded_image is not None:
-                with open("temp_thumb.jpg", "wb") as f: f.write(uploaded_image.read())
+                with open("temp_thumb.jpg", "wb") as f: 
+                    f.write(uploaded_image.read())
                 status_text = st.empty()
                 status_text.markdown("🎨 থাম্বনেইল এবং অডিও ফাইনাল সিঙ্ক হচ্ছে...")
                 
                 cmd = [
-                    ffmpeg_exe, '-y', '-i', v_step3, '-i', "temp_thumb.jpg",
+                    ffmpeg_exe, '-y', '-i', v_step2, '-i', "temp_thumb.jpg",
                     '-filter_complex', 
                     '[1:v]scale=iw:ih[t];[0:v][t]overlay=enable=\'lte(t,5)\':shortest=0[v];'
                     '[0:a]adelay=5000|5000[a]',
@@ -331,11 +224,13 @@ elif st.session_state.step == 4:
                 
                 if os.path.exists("temp_thumb.jpg"): os.remove("temp_thumb.jpg")
             else:
-                os.rename(v_step3, v_final)
+                if os.path.exists(v_step2):
+                    os.rename(v_step2, v_final)
                 
             if os.path.exists(v_final) and os.path.getsize(v_final) > 0:
                 st.success("🎉 আলহামদুলিল্লাহ সুজন ভাই! আপনার এডিটিং প্রসেস সফল হয়েছে।")
-                with open(v_final, "rb") as video_file: st.video(video_file.read())
+                with open(v_final, "rb") as video_file: 
+                    st.video(video_file.read())
                 with open(v_final, "rb") as file:
                     st.download_button(
                         label="⬇️ গ্যালারিতে সেভ করুন (Download Perfect Video)",
@@ -348,7 +243,7 @@ elif st.session_state.step == 4:
 
     st.markdown("---")
     if st.button("🔄 নতুন ভিডিও এডিটিং শুরু করুন"):
-        for f in [v_start, v_step1, v_step2, v_step3, v_final, preview_img_path]:
+        for f in [v_start, v_step1, v_step2, v_final]:
             if os.path.exists(f): os.remove(f)
         st.session_state.step = 1
         st.session_state.video_data = None
