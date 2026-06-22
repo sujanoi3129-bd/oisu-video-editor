@@ -9,8 +9,8 @@ st._config.set_option("server.maxUploadSize", 2000)
 
 st.set_page_config(page_title="Smart Video Editor Pro", page_icon="🎬", layout="centered")
 
-st.title("🎬 Anti-Copyright Master Video Engine (Step-Fix)")
-st.write("সুজন ভাই, কোড থেকে টেক্সট বসানোর অকেজো সিস্টেমটি সফলভাবে বাদ দেওয়া হয়েছে।")
+st.title("🎬 Anti-Copyright Master Video Engine (Audio Sync Fix)")
+st.write("সুজন ভাই, এই কোডটিতে থাম্বনেইল ২ সেকেন্ড করা হয়েছে এবং অডিও আগে চলে যাওয়ার সমস্যাটি ফিক্স করা হয়েছে।")
 
 # অস্থায়ী ফাইল ট্র্যাকিং পাথসমূহ
 v_start = "temp_0_input.mp4"
@@ -36,7 +36,6 @@ def run_ffmpeg_with_progress(cmd, status_text_display):
     progress_bar = st.progress(0)
     total_duration = 1.0
     
-    # ইনপুট ফাইলের মোট ডিউরেশন বের করার চেষ্টা
     for arg in cmd:
         if "temp_" in arg and os.path.exists(arg):
             try:
@@ -91,14 +90,13 @@ if st.session_state.step == 1:
             try:
                 ffmpeg_exe = im_ffmpeg.get_ffmpeg_exe()
                 
-                # আগের কোনো পুরনো ফাইল থাকলে ডিলিট করা
                 for f in [v_start, v_step1, v_step2, v_final]:
                     if os.path.exists(f): os.remove(f)
                     
                 with open(v_start, "wb") as f:
                     f.write(uploaded_video.read())
                     
-                v_filter = "crop=in_w*0.97:in_h*0.97:in_w*0.015:in_h*0.015,eq=contrast=1.07:brightness=0.02:saturation=1.05"
+                v_filter = "hflip,crop=in_w*0.94:in_h*0.94:in_w*0.03:in_h*0.03,eq=contrast=1.12:brightness=0.04:saturation=1.15:gamma=0.95,setpts=0.95*PTS"
                 
                 if "High Security" in voice_style:
                     a_filter = "asetrate=44100*0.93,atempo=1.07,bass=g=5"
@@ -110,8 +108,9 @@ if st.session_state.step == 1:
                 cmd = [
                     ffmpeg_exe, '-y', '-i', v_start,
                     '-vf', v_filter, '-af', a_filter,
+                    '-r', '24',
                     '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '22',
-                    '-c:a', 'aac', '-b:a', '192k', v_step1
+                    '-c:a', 'aac', '-b:a', '128k', v_step1
                 ]
                 
                 run_ffmpeg_with_progress(cmd, status_text)
@@ -132,7 +131,7 @@ if st.session_state.step == 1:
                 if os.path.exists(v_start): os.remove(v_start)
 
 # ==========================================
-# 🟢  ধাপ ২: ভিডিও দেখে মিনিট-সেকেন্ডে কাটা
+# 🟢  ধাপ ২: ভিডিও কাটিং (এবং স্কিপ অপশন)
 # ==========================================
 elif st.session_state.step == 2:
     st.header("Step ২: ভিডিও কাটিং টাইমলাইন")
@@ -167,79 +166,101 @@ elif st.session_state.step == 2:
             end_m = st.number_input("শেষের মিনিট (Min):", min_value=0, max_value=max_mins, value=max_mins)
             end_s = st.number_input("শেষের সেকেন্ড (Sec):", min_value=0, max_value=59, value=max_secs)
 
-        if st.button("✂️ ২. ভিডিও কাটুন"):
-            final_start_seconds = (start_m * 60) + start_s
-            final_end_seconds = (end_m * 60) + end_s
-            status_text = st.empty()
-            status_text.markdown("✂️ ভিডিও ট্রিম বা কাটা শুরু হচ্ছে...")
-            
-            cut_duration = final_end_seconds - final_start_seconds
-            def convert_to_hhmmss(sec_val):
-                h = int(sec_val // 3600)
-                m = int((sec_val % 3600) // 60)
-                s = int(sec_val % 60)
-                return f"{h:02d}:{m:02d}:{s:02d}"
-            
-            cmd = [
-                ffmpeg_exe, '-y', '-ss', convert_to_hhmmss(final_start_seconds), '-i', v_step1,
-                '-t', convert_to_hhmmss(cut_duration), '-c:v', 'libx264', '-c:a', 'aac', v_step2
-            ]
-            
-            run_ffmpeg_with_progress(cmd, status_text)
-            
-            if os.path.exists(v_step2) and os.path.getsize(v_step2) > 0:
-                with open(v_step2, "rb") as f: 
-                    st.session_state.video_data = f.read()
-                st.session_state.step = 3
-                st.rerun()
-            if os.path.exists(v_step1): os.remove(v_step1)
+        b_col1, b_col2 = st.columns(2)
+        
+        with b_col1:
+            if st.button("✂️ ২. ভিডিও কাটুন"):
+                final_start_seconds = (start_m * 60) + start_s
+                final_end_seconds = (end_m * 60) + end_s
+                status_text = st.empty()
+                status_text.markdown("✂️ ভিডিও ট্রিম বা কাটা শুরু হচ্ছে...")
+                
+                cut_duration = final_end_seconds - final_start_seconds
+                def convert_to_hhmmss(sec_val):
+                    h = int(sec_val // 3600)
+                    m = int((sec_val % 3600) // 60)
+                    s = int(sec_val % 60)
+                    return f"{h:02d}:{m:02d}:{s:02d}"
+                
+                cmd = [
+                    ffmpeg_exe, '-y', '-ss', convert_to_hhmmss(final_start_seconds), '-i', v_step1,
+                    '-t', convert_to_hhmmss(cut_duration), '-c:v', 'libx264', '-c:a', 'aac', v_step2
+                ]
+                
+                run_ffmpeg_with_progress(cmd, status_text)
+                
+                if os.path.exists(v_step2) and os.path.getsize(v_step2) > 0:
+                    with open(v_step2, "rb") as f: 
+                        st.session_state.video_data = f.read()
+                    st.session_state.step = 3
+                    st.rerun()
+                if os.path.exists(v_step1): os.remove(v_step1)
+                
+        with b_col2:
+            if st.button("⏩ কাটিং ছাড়া সরাসরি পরের ধাপে যান"):
+                if os.path.exists(v_step1):
+                    if os.path.exists(v_step2): os.remove(v_step2)
+                    os.rename(v_step1, v_step2)
+                    
+                    with open(v_step2, "rb") as f:
+                        st.session_state.video_data = f.read()
+                    st.session_state.step = 3
+                    st.rerun()
 
 # ==========================================
-# 🟢  ধাপ ৩: থাম্বনেইল সেট এবং ফাইনাল ডাউনলোড
+# 🟢  ধাপ ৩: কাস্টম থাম্বনেইল ও ফাইনাল ডাউনলোড
 # ==========================================
 elif st.session_state.step == 3:
     st.header("Step ৩: কাস্টম থাম্বনেইল ও ফাইনাল ডাউনলোড")
-    uploaded_image = st.file_uploader("📷 থাম্বনেইল ছবি আপলোড করুন (না দিলেও সমস্যা নেই):", type=["jpg", "jpeg", "png"])
+    uploaded_image = st.file_uploader("📷 থাম্বনেইল ছবি আপলোড করুন (না দিলেও নিচের স্কিপ বোতাম চাপুন):", type=["jpg", "jpeg", "png"])
     
-    if st.button("🎬 ফাইনাল ভিডিও রেন্ডার করুন"):
-        if st.session_state.video_data is not None:
-            save_bytes_to_file(st.session_state.video_data, v_step2)
-            ffmpeg_exe = im_ffmpeg.get_ffmpeg_exe()
-            
-            if uploaded_image is not None:
+    t_col1, t_col2 = st.columns(2)
+    
+    with t_col1:
+        if st.button("🎬 কাস্টম থাম্বনেইলসহ রেন্ডার করুন"):
+            if uploaded_image is not None and st.session_state.video_data is not None:
+                save_bytes_to_file(st.session_state.video_data, v_step2)
+                ffmpeg_exe = im_ffmpeg.get_ffmpeg_exe()
+                
                 with open("temp_thumb.jpg", "wb") as f: 
                     f.write(uploaded_image.read())
+                    
                 status_text = st.empty()
-                status_text.markdown("🎨 থাম্বনেইল এবং অডিও ফাইনাল সিঙ্ক হচ্ছে...")
+                status_text.markdown("🎨 ২ সেকেন্ডের থাম্বনেইল সেট এবং অডিও মেলানো হচ্ছে...")
                 
+                # 🎯 ফিক্স: থাম্বনেইল ঠিক ২ সেকেন্ড থাকবে (lte(t,2)) এবং অডিও নিখুঁত ২ সেকেন্ড ডিলে হবে (adelay=2000)
                 cmd = [
                     ffmpeg_exe, '-y', '-i', v_step2, '-i', "temp_thumb.jpg",
                     '-filter_complex', 
-                    '[1:v]scale=iw:ih[t];[0:v][t]overlay=enable=\'lte(t,5)\':shortest=0[v];'
-                    '[0:a]adelay=5000|5000[a]',
+                    '[1:v]scale=iw:ih[t];[0:v][t]overlay=enable=\'lte(t,2)\':shortest=0[v];'
+                    '[0:a]adelay=2000|2000[a]',
                     '-map', '[v]', '-map', '[a]',
                     '-c:v', 'libx264', '-crf', '20', '-c:a', 'aac', v_final
                 ]
                 run_ffmpeg_with_progress(cmd, status_text)
                 
                 if os.path.exists("temp_thumb.jpg"): os.remove("temp_thumb.jpg")
-            else:
-                if os.path.exists(v_step2):
-                    os.rename(v_step2, v_final)
                 
-            if os.path.exists(v_final) and os.path.getsize(v_final) > 0:
-                st.success("🎉 আলহামদুলিল্লাহ সুজন ভাই! আপনার এডিটিং প্রসেস সফল হয়েছে।")
-                with open(v_final, "rb") as video_file: 
-                    st.video(video_file.read())
-                with open(v_final, "rb") as file:
-                    st.download_button(
-                        label="⬇️ গ্যালারিতে সেভ করুন (Download Perfect Video)",
-                        data=file,
-                        file_name="sujon_anti_copyright_pro.mp4",
-                        mime="video/mp4"
-                    )
+                if os.path.exists(v_final) and os.path.getsize(v_final) > 0:
+                    st.success("🎉 আলহামদুলিল্লাহ সুজন ভাই! কাস্টম থাম্বনেইলসহ ভিডিও রেডি।")
+                    with open(v_final, "rb") as video_file: st.video(video_file.read())
+                    with open(v_final, "rb") as file:
+                        st.download_button(label="⬇️ গ্যালারিতে সেভ করুন", data=file, file_name="sujon_copyright_pro.mp4", mime="video/mp4")
             else:
-                st.error("❌ ফাইনাল রেন্ডারিং এ সমস্যা হয়েছে।")
+                st.error("❌ ভাই, আগে একটি থাম্বনেইল ছবি আপলোড করুন অথবা পাশের স্কিপ বোতামটি ব্যবহার করুন।")
+
+    with t_col2:
+        # 🎯 সুজন ভাইয়ের স্পেশাল বোতাম ২: থাম্বনেইল ছাড়া সরাসরি ভিডিও সেভ করা
+        if st.button("⏩ থাম্বনেইল ছাড়া ফাইনাল ভিডিও ডাউনলোড করুন"):
+            if st.session_state.video_data is not None:
+                save_bytes_to_file(st.session_state.video_data, v_step2)
+                if os.path.exists(v_final): os.remove(v_final)
+                os.rename(v_step2, v_final)
+                
+                st.success("🎉 আলহামদুলিল্লাহ সুজন ভাই! থাম্বনেইল ছাড়া অরিজিনাল অডিও সিঙ্কেই ভিডিও রেডি।")
+                with open(v_final, "rb") as video_file: st.video(video_file.read())
+                with open(v_final, "rb") as file:
+                    st.download_button(label="⬇️ গ্যালারিতে সেভ করুন", data=file, file_name="sujon_copyright_pro.mp4", mime="video/mp4")
 
     st.markdown("---")
     if st.button("🔄 নতুন ভিডিও এডিটিং শুরু করুন"):
