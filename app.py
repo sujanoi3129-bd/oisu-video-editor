@@ -4,13 +4,13 @@ import os
 import re
 import imageio_ffmpeg as im_ffmpeg
 
-# বড় ফাইল আপলোডের জন্য সাইজ লিমিট ২০০০ MB করা হলো
+# বড় ফাইল আপলোডের জন্য সাইজ লিমিট ২০۰۰ MB করা হলো
 st._config.set_option("server.maxUploadSize", 2000)
 
 st.set_page_config(page_title="Smart Video Editor Pro", page_icon="🎬", layout="centered")
 
-st.title("🎬 Anti-Copyright Master Video Engine (Audio Sync Fix)")
-st.write("সুজন ভাই, এই কোডটিতে থাম্বনেইল ২ সেকেন্ড করা হয়েছে এবং অডিও আগে চলে যাওয়ার সমস্যাটি ফিক্স করা হয়েছে।")
+st.title("🎬 Anti-Copyright Master Video Engine (Extreme Voice Fix)")
+st.write("সুজন ভাই, এই কোডটিতে ভয়েস পরিবর্তনের অপশনগুলো একদম হাই-পাওয়ার করে দেওয়া হয়েছে যাতে কপিরাইট না আসে।")
 
 # অস্থায়ী ফাইল ট্র্যাকিং পাথসমূহ
 v_start = "temp_0_input.mp4"
@@ -77,10 +77,10 @@ if st.session_state.step == 1:
     st.header("Step ১: ভিডিও আপলোড ও কপিরাইট ফিল্টার")
     uploaded_video = st.file_uploader("আপনার মূল ভিডিও ফাইলটি আপলোড করুন (MP4/MKV)", type=["mp4", "mkv"])
     
-    voice_style = st.selectbox("ভয়েজ ও সুর পরিবর্তনের মোড:", [
-        "🔥 High Security Voice Changer (পিচ ভারী + ৩% স্পিড চেঞ্জ)",
-        "🎵 Creative Lo-Fi Vibe (হালকা ইকো + ২% গতি বৃদ্ধি)",
-        "🎙️ Deep Cinematic Echo (রহস্যময় গম্ভীর কণ্ঠ)"
+    voice_style = st.selectbox("🚀 চরম ভয়েস পরিবর্তন ও কপিরাইট প্রটেকশন মোড:", [
+        "🔥 Extreme Heavy Pitch Mode (কণ্ঠ অনেক ভারী + ৭% স্পিড বুস্ট - কপিরাইট কাটার জন্য সেরা)",
+        "🎵 High Alteration Lo-Fi (ইকো স্পিড মিক্স + ৫% গতি বৃদ্ধি - সুর ও গান সম্পূর্ণ বদলে যাবে)",
+        "🎙️ Deep Robotic Cinematic (অতিরিক্ত গম্ভীর রহস্যময় কণ্ঠ + হাই বেস)"
     ])
     
     if uploaded_video is not None:
@@ -96,14 +96,19 @@ if st.session_state.step == 1:
                 with open(v_start, "wb") as f:
                     f.write(uploaded_video.read())
                     
-                v_filter = "hflip,crop=in_w*0.94:in_h*0.94:in_w*0.03:in_h*0.03,eq=contrast=1.12:brightness=0.04:saturation=1.15:gamma=0.95,setpts=0.95*PTS"
+                # ভিডিও ফিল্টার (৫% ক্রপ, মিরর এবং কালার বুস্ট একসাথে)
+                v_filter = "hflip,crop=in_w*0.95:in_h*0.95:in_w*0.025:in_h*0.025,eq=contrast=1.15:brightness=0.04:saturation=1.20:gamma=0.90,setpts=0.94*PTS"
                 
-                if "High Security" in voice_style:
-                    a_filter = "asetrate=44100*0.93,atempo=1.07,bass=g=5"
-                elif "Lo-Fi" in voice_style:
-                    a_filter = "atempo=1.03,aecho=0.8:0.85:25:0.2,treble=g=2"
+                # 🎯 সুজন ভাই, এখানে ভয়েসের ফিল্টারগুলো একদম এক্সট্রিম লেভেলে বুস্ট করা হয়েছে
+                if "Extreme Heavy Pitch" in voice_style:
+                    # পিচ অনেক বেশি ভারী করা হয়েছে (০.৮৫) এবং অডিও গতি ৭% ফাস্ট করা হয়েছে
+                    a_filter = "asetrate=44100*0.85,atempo=1.25,bass=g=8,volume=1.2"
+                elif "High Alteration Lo-Fi" in voice_style:
+                    # সুর ও মিউজিক চেনার উপায় থাকবে না, ইকো এবং টেম্পো মিক্স করা হয়েছে
+                    a_filter = "atempo=1.06,aecho=0.8:0.90:30:0.4,treble=g=5,highpass=f=200"
                 else:
-                    a_filter = "asetrate=44100*0.90,atempo=1.11,aecho=0.8:0.90:35:0.3,bass=g=6"
+                    # রোবোটিক গম্ভীর কণ্ঠ
+                    a_filter = "asetrate=44100*0.78,atempo=1.35,aecho=0.8:0.85:40:0.3,bass=g=10"
                     
                 cmd = [
                     ffmpeg_exe, '-y', '-i', v_start,
@@ -228,7 +233,6 @@ elif st.session_state.step == 3:
                 status_text = st.empty()
                 status_text.markdown("🎨 ২ সেকেন্ডের থাম্বনেইল সেট এবং অডিও মেলানো হচ্ছে...")
                 
-                # 🎯 ফিক্স: থাম্বনেইল ঠিক ২ সেকেন্ড থাকবে (lte(t,2)) এবং অডিও নিখুঁত ২ সেকেন্ড ডিলে হবে (adelay=2000)
                 cmd = [
                     ffmpeg_exe, '-y', '-i', v_step2, '-i', "temp_thumb.jpg",
                     '-filter_complex', 
@@ -250,7 +254,6 @@ elif st.session_state.step == 3:
                 st.error("❌ ভাই, আগে একটি থাম্বনেইল ছবি আপলোড করুন অথবা পাশের স্কিপ বোতামটি ব্যবহার করুন।")
 
     with t_col2:
-        # 🎯 সুজন ভাইয়ের স্পেশাল বোতাম ২: থাম্বনেইল ছাড়া সরাসরি ভিডিও সেভ করা
         if st.button("⏩ থাম্বনেইল ছাড়া ফাইনাল ভিডিও ডাউনলোড করুন"):
             if st.session_state.video_data is not None:
                 save_bytes_to_file(st.session_state.video_data, v_step2)
