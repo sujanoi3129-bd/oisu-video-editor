@@ -4,13 +4,13 @@ import os
 import re
 import imageio_ffmpeg as im_ffmpeg
 
-# বড় ফাইল আপলোডের জন্য সাইজ লিমিট ২০۰۰ MB করা হলো
+# বড় ফাইল আপলোডের জন্য সাইজ লিমিট ২০০০ MB করা হলো
 st._config.set_option("server.maxUploadSize", 2000)
 
 st.set_page_config(page_title="Smart Video Editor Pro", page_icon="🎬", layout="centered")
 
-st.title("🎬 Anti-Copyright Master Video Engine (Extreme Voice Fix)")
-st.write("সুজন ভাই, এই কোডটিতে ভয়েস পরিবর্তনের অপশনগুলো একদম হাই-পাওয়ার করে দেওয়া হয়েছে যাতে কপিরাইট না আসে।")
+st.title("🎬 Anti-Copyright Master Video Engine (Meta Bypass Pro)")
+st.write("সুজন ভাই, এই কোডটিতে ফেসবুকের অ디오 মিউট সমস্যা (Partial Mute) সমাধানের জন্য এক্সট্রিম ফিল্টার যুক্ত করা হয়েছে।")
 
 # অস্থায়ী ফাইল ট্র্যাকিং পাথসমূহ
 v_start = "temp_0_input.mp4"
@@ -31,7 +31,6 @@ def save_bytes_to_file(bytes_data, file_path):
     with open(file_path, "wb") as f:
         f.write(bytes_data)
 
-# এফএফএমপ্যাগ প্রসেসিং লাইভ ট্র্যাক করার ফাংশন
 def run_ffmpeg_with_progress(cmd, status_text_display):
     progress_bar = st.progress(0)
     total_duration = 1.0
@@ -78,7 +77,7 @@ if st.session_state.step == 1:
     uploaded_video = st.file_uploader("আপনার মূল ভিডিও ফাইলটি আপলোড করুন (MP4/MKV)", type=["mp4", "mkv"])
     
     voice_style = st.selectbox("🚀 চরম ভয়েস পরিবর্তন ও কপিরাইট প্রটেকশন মোড:", [
-        "🔥 Extreme Heavy Pitch Mode (কণ্ঠ অনেক ভারী + ৭% স্পিড বুস্ট - কপিরাইট কাটার জন্য সেরা)",
+        "🔥 Meta Bypass Extreme Mode (পিচ ডিস্টরশন + ভাইব্রেটো + ৮% স্পিড বুস্ট - মিউট ফিক্স)",
         "🎵 High Alteration Lo-Fi (ইকো স্পিড মিক্স + ৫% গতি বৃদ্ধি - সুর ও গান সম্পূর্ণ বদলে যাবে)",
         "🎙️ Deep Robotic Cinematic (অতিরিক্ত গম্ভীর রহস্যময় কণ্ঠ + হাই বেস)"
     ])
@@ -96,18 +95,15 @@ if st.session_state.step == 1:
                 with open(v_start, "wb") as f:
                     f.write(uploaded_video.read())
                     
-                # ভিডিও ফিল্টার (৫% ক্রপ, মিরর এবং কালার বুস্ট একসাথে)
-                v_filter = "hflip,crop=in_w*0.95:in_h*0.95:in_w*0.025:in_h*0.025,eq=contrast=1.15:brightness=0.04:saturation=1.20:gamma=0.90,setpts=0.94*PTS"
+                v_filter = "hflip,crop=in_w*0.94:in_h*0.94:in_w*0.03:in_h*0.03,eq=contrast=1.16:brightness=0.05:saturation=1.22:gamma=0.92,setpts=0.93*PTS"
                 
-                # 🎯 সুজন ভাই, এখানে ভয়েসের ফিল্টারগুলো একদম এক্সট্রিম লেভেলে বুস্ট করা হয়েছে
-                if "Extreme Heavy Pitch" in voice_style:
-                    # পিচ অনেক বেশি ভারী করা হয়েছে (০.৮৫) এবং অডিও গতি ৭% ফাস্ট করা হয়েছে
-                    a_filter = "asetrate=44100*0.85,atempo=1.25,bass=g=8,volume=1.2"
+                # 🎯 অডিও ফিল্টারে ভাইব্রেটো ও কোরাস মিক্স করা হয়েছে যাতে ফেসবুক ট্র্যাক না করতে পারে
+                if "Meta Bypass Extreme" in voice_style:
+                    # vibrato এবং chorus ইফেক্ট দিয়ে সুরের ওয়েভফর্ম নষ্ট করা হয়েছে
+                    a_filter = "asetrate=44100*0.84,atempo=1.28,vibrato=f=7:d=0.3,chorus=0.5:0.9:50:0.4:0.25:2,bass=g=7,volume=1.3"
                 elif "High Alteration Lo-Fi" in voice_style:
-                    # সুর ও মিউজিক চেনার উপায় থাকবে না, ইকো এবং টেম্পো মিক্স করা হয়েছে
                     a_filter = "atempo=1.06,aecho=0.8:0.90:30:0.4,treble=g=5,highpass=f=200"
                 else:
-                    # রোবোটিক গম্ভীর কণ্ঠ
                     a_filter = "asetrate=44100*0.78,atempo=1.35,aecho=0.8:0.85:40:0.3,bass=g=10"
                     
                 cmd = [
@@ -260,7 +256,7 @@ elif st.session_state.step == 3:
                 if os.path.exists(v_final): os.remove(v_final)
                 os.rename(v_step2, v_final)
                 
-                st.success("🎉 আলহামদুলিল্লাহ সুজন ভাই! থাম্বনেইল ছাড়া অরিজিনাল অডিও সিঙ্কেই ভিডিও রেডি।")
+                st.success("🎉 আলহামদুলিল্লাহ সুজন ভাই! ভিডিও রেডি।")
                 with open(v_final, "rb") as video_file: st.video(video_file.read())
                 with open(v_final, "rb") as file:
                     st.download_button(label="⬇️ গ্যালারিতে সেভ করুন", data=file, file_name="sujon_copyright_pro.mp4", mime="video/mp4")
